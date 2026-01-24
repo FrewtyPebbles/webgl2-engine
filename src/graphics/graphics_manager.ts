@@ -1,7 +1,7 @@
-import { Vec3, Vec2, Mat4, Quat } from '@vicimpa/glm';
+import { Vec3, Vec2, Mat4, Quat, Vec4 } from '@vicimpa/glm';
 import { Node3D, Node } from './node.ts';
 import { Camera3D } from './node_extensions.ts';
-import { CubeMapTexture, Texture } from './assets.ts';
+import { CubeMapTexture, Texture, TextureType } from './assets.ts';
 import Engine from '../engine.ts';
 
 // passthrough
@@ -63,6 +63,109 @@ export interface WebGLUniform {
     type:WebGLUniformType;
     texture_unit?:number;
 };
+
+export enum AttachmentType {
+    TEXTURE_COLOR,
+    TEXTURE_DEPTH,
+    TEXTURE_STENCIL,
+    TEXTURE_DEPTH_STENCIL
+}
+
+export interface AttachmentInfo {
+    name:string;
+    type:AttachmentType;
+    mipmap_level?:number;
+    texture_parameters?:{[key:number]:number};
+}
+
+export class Framebuffer {
+    name:string;
+    gl:WebGL2RenderingContext;
+    gm:GraphicsManager;
+    width:number;
+    height:number;
+    clear_color:Vec4;
+    webgl_frame_buffer:WebGLFramebuffer;
+    use_depth_buffer:boolean = false;
+    textures:{[name:string]:Texture} = {};
+
+    constructor(name:string, gm:GraphicsManager, gl:WebGL2RenderingContext, width:number, height:number, attachment_info:{[name:string]:AttachmentInfo}, clear_color:Vec4 = new Vec4(0,0,0,1)) {
+        this.name = name
+        this.gl = gl;
+        this.gm = gm;
+        this.name = name;
+        this.width = width;
+        this.height = height;
+        this.clear_color = clear_color;
+        this.webgl_frame_buffer = this.gl.createFramebuffer();
+
+        let color_attachment_count = 0;
+
+        let attachment_numbers:number[] = []
+
+        for (const [attachment_name, attachment] of Object.entries(attachment_info)) {
+            const is_depth_textures_attachment = attachment.type === AttachmentType.TEXTURE_DEPTH || 
+                attachment.type === AttachmentType.TEXTURE_DEPTH_STENCIL;
+            
+            var tex_parameters:{[key:number]:number} = 
+                attachment.texture_parameters === undefined ? {} : attachment.texture_parameters;
+            tex_parameters[gl.TEXTURE_MIN_FILTER] = gl.LINEAR;
+            tex_parameters[gl.TEXTURE_MAG_FILTER] = gl.LINEAR;
+            tex_parameters[gl.TEXTURE_WRAP_S] = gl.CLAMP_TO_EDGE;
+            tex_parameters[gl.TEXTURE_WRAP_T] = gl.CLAMP_TO_EDGE;
+            
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.webgl_frame_buffer);
+            if (is_depth_textures_attachment) {
+                this.use_depth_buffer = true;
+
+                this.textures[attachment_name] = new Texture(
+                    this.gm,
+                    this.width,
+                    this.height,
+                    TextureType.DEPTH,
+                    tex_parameters
+                );
+
+                gl.framebufferTexture2D(
+                    gl.FRAMEBUFFER,
+                    gl.DEPTH_ATTACHMENT,
+                    gl.TEXTURE_2D,
+                    this.textures[attachment_name].webgl_texture,
+                    attachment.mipmap_level === undefined ? 0 : attachment.mipmap_level
+                );
+            } else {
+                const attachment_num = gl.COLOR_ATTACHMENT0 + color_attachment_count;
+
+                this.textures[attachment_name] = new Texture(
+                    this.gm,
+                    this.width,
+                    this.height,
+                    TextureType.DEFAULT,
+                    tex_parameters
+                );
+                
+                gl.framebufferTexture2D(
+                    gl.FRAMEBUFFER,
+                    attachment_num,
+                    gl.TEXTURE_2D,
+                    this.textures[attachment_name].webgl_texture,
+                    attachment.mipmap_level === undefined ? 0 : attachment.mipmap_level
+                );
+
+                attachment_numbers.push(attachment_num);
+                color_attachment_count++;
+            }
+        }
+        this.gl.drawBuffers(attachment_numbers);
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            throw Error(`Framebuffer incomplete, STATUS = ${gl.checkFramebufferStatus(gl.FRAMEBUFFER)}`);
+        }
+    }
+
+    use() {
+        this.gm.use_framebuffer(this.name);
+    }
+}
 
 export class ShaderProgram {
     gl:WebGLRenderingContext;
@@ -132,9 +235,11 @@ export class GraphicsManager {
     canvas:HTMLCanvasElement;
     gl:WebGL2RenderingContext;
     shader_programs:{[key:string]:ShaderProgram} = {};
+    shader_program:ShaderProgram|null = null;
+    framebuffers:{[key:string]:Framebuffer} = {};
+    framebuffer:Framebuffer|null = null;
     vertex_attributes:{[key:string]:WebGLVertexAttribute} = {};
     vertex_count:number = 0;
-    shader_program:ShaderProgram|null = null;
 
     prev_time:number = 0;
 
@@ -188,6 +293,8 @@ export class GraphicsManager {
     }
 
     use_shader(name:string) {
+        if (this.shader_program)
+            this.clear_shader();
         this.shader_program = this.shader_programs[name];
         this.gl.useProgram(this.shader_program.webgl_shader_program);
     }
@@ -195,6 +302,40 @@ export class GraphicsManager {
     clear_shader() {
         this.gl.useProgram(null);
         this.shader_program = null;
+    }
+
+    create_framebuffer(name:string, width:number, height:number, attachment_info:{ [name: string]: AttachmentInfo }) {
+        const framebuffer = new Framebuffer(name, this, this.gl, width, height, attachment_info);
+        this.framebuffers[name] = framebuffer;
+        return framebuffer;
+    }
+
+    use_framebuffer(name:string) {
+        if (this.framebuffer)
+            this.unuse_framebuffer();
+        this.framebuffer = this.framebuffers[name];
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.webgl_frame_buffer);
+        this.gl.viewport(0, 0, this.framebuffer.width, this.framebuffer.height);
+        if (this.framebuffer.use_depth_buffer) {
+            this.gl.enable(this.gl.DEPTH_TEST);
+        }
+        const cc = this.framebuffer.clear_color;
+        this.gl.clearColor(cc.x, cc.y, cc.z, cc.w);
+        this.gl.clear(
+            this.gl.COLOR_BUFFER_BIT |
+            (this.framebuffer.use_depth_buffer ? this.gl.DEPTH_BUFFER_BIT : 0)
+        );
+    }
+
+    unuse_framebuffer() {
+        if (!this.framebuffer)
+            return;
+        if (this.framebuffer.use_depth_buffer) {
+            this.gl.disable(this.gl.DEPTH_TEST);
+        }
+        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        this.framebuffer = null;
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
     set_uniform(label:string, value:any, transpose:boolean = false) {
@@ -212,7 +353,7 @@ export class GraphicsManager {
         switch (uniform.type) {
             case WebGLUniformType.TEXTURE_2D:
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
-                this.gl.bindTexture(this.gl.TEXTURE_2D, (value as Texture).texture);
+                this.gl.bindTexture(this.gl.TEXTURE_2D, (value as Texture).webgl_texture);
                 this.gl.uniform1i(uniform.loc!, uniform.texture_unit!);
                 break;
 

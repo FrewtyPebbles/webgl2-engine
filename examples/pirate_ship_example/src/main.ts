@@ -1,16 +1,20 @@
 import { Mat3, Mat4, Quat, Vec2, Vec3 } from "@vicimpa/glm";
-import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, CubeMapTexture, Sprite2D, Texture, Node } from "webgl2-engine";
+import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, CubeMapTexture, Sprite2D, Texture, Node, TextureType, AttachmentType } from "webgl2-engine";
 
 
 var wobble_quat = new Quat();
 
 var rotation_quat = new Quat();
 
+
+
 function update(engine:Engine, time:number, delta_time:number) {
 
     const im:InputManager = engine.input_manager;
+    const gm:GraphicsManager = engine.graphics_manager;
 
     const pirate_ship:Object3D|null = engine.get_node("pirate_ship") as Object3D|null;
+    const planet_sprite:Sprite2D|null = engine.get_node("planet") as Sprite2D|null;
 
     if (!pirate_ship)
         return;
@@ -42,7 +46,22 @@ function update(engine:Engine, time:number, delta_time:number) {
     pirate_ship.rotation = new Quat().mul(wobble_quat).mul(rotation_quat);
     
     engine.main_camera.rotation.fromMat3(new Mat3().fromMat4(new Mat4().lookAt(engine.main_camera.position, pirate_ship.position.clone().sub(new Vec3(0, -100, 0)), new Vec3(0,1,0)).invert()));
-    
+
+    if (!planet_sprite)
+        return;
+
+    gm.use_framebuffer("test");
+
+    gm.gl.enable(gm.gl.DEPTH_TEST)
+
+    pirate_ship.render(engine.main_camera.get_view_matrix(), engine.main_camera.get_projection_matrix(engine.canvas), new Mat4());
+
+    gm.gl.disable(gm.gl.DEPTH_TEST)
+
+    gm.unuse_framebuffer();
+
+    const test_framebuffer = gm.framebuffers["test"];
+    planet_sprite.sprite_texture = test_framebuffer.textures["default"];
 }
 
 async function startup(engine:Engine) {
@@ -99,6 +118,18 @@ async function startup(engine:Engine) {
 
     shader_prog_2d.build();
 
+    // Framebuffer
+    const test_framebuffer = gm.create_framebuffer("test", 512, 512, {
+        default:{
+            name:"default",
+            type:AttachmentType.TEXTURE_COLOR
+        },
+        depth:{
+            name:"depth",
+            type:AttachmentType.TEXTURE_DEPTH
+        }
+    });
+
     const skybox_texture = new CubeMapTexture(gm,
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/top.jpg"),
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/bottom.jpg"),
@@ -108,7 +139,7 @@ async function startup(engine:Engine) {
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/right.jpg"),
     {}, 0);
 
-    const planet_texture = new Texture(gm, await engine.UTIL.load_image("/assets/sprites/planet.png"), {}, 0)
+    const planet_texture = new Texture(gm, await engine.UTIL.load_image("/assets/sprites/planet.png"), TextureType.DEFAULT, {})
 
     engine.root_node = new Skybox(engine, "default_skybox", skybox_texture, shader_prog_skybox);
 
