@@ -1,10 +1,6 @@
-import { Mat3, Mat4, Quat, Vec3 } from "@vicimpa/glm";
-import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, CubeMapTexture } from "webgl2-engine";
+import { Mat3, Mat4, Quat, Vec2, Vec3 } from "@vicimpa/glm";
+import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, CubeMapTexture, Sprite2D, Texture, Node } from "webgl2-engine";
 
-window.addEventListener('error', (event) => {
-  console.error('Global error caught:', event.error);
-  console.error('Error stack:', event.error?.stack);
-});
 
 var wobble_quat = new Quat();
 
@@ -13,8 +9,6 @@ var rotation_quat = new Quat();
 function update(engine:Engine, time:number, delta_time:number) {
 
     const im:InputManager = engine.input_manager;
-
-    console.log(engine.root_node);
 
     const pirate_ship:Object3D|null = engine.get_node("pirate_ship") as Object3D|null;
 
@@ -92,6 +86,19 @@ async function startup(engine:Engine) {
 
     shader_prog_skybox.build();
 
+    // 2D SHADER
+    const shader_prog_2d = gm.create_shader_program("2D");
+
+    shader_prog_2d.add_shader(gm.gl.VERTEX_SHADER, await engine.UTIL.load_text_file("/assets/default_2d.vs"));
+    shader_prog_2d.add_shader(gm.gl.FRAGMENT_SHADER, await engine.UTIL.load_text_file("/assets/default_2d.fs"));
+
+    shader_prog_2d.add_uniform("u_model", WebGLUniformType.F4M);
+    shader_prog_2d.add_uniform("u_projection", WebGLUniformType.F4M);
+
+    shader_prog_2d.add_uniform("sprite_texture", WebGLUniformType.TEXTURE_2D);
+
+    shader_prog_2d.build();
+
     const skybox_texture = new CubeMapTexture(gm,
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/top.jpg"),
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/bottom.jpg"),
@@ -100,6 +107,8 @@ async function startup(engine:Engine) {
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/left.jpg"),
         await engine.UTIL.load_image("/assets/skyboxes/learnopengl/right.jpg"),
     {}, 0);
+
+    const planet_texture = new Texture(gm, await engine.UTIL.load_image("/assets/sprites/planet.png"), {}, 0)
 
     engine.root_node = new Skybox(engine, "default_skybox", skybox_texture, shader_prog_skybox);
 
@@ -112,7 +121,21 @@ async function startup(engine:Engine) {
 
     const pirate_ship = new Object3D(engine, "pirate_ship", pirate_ship_model);
 
+    const overlay_node = new Node(engine, "overlay")
+
+    const planet_sprite = new Sprite2D(engine, "planet", shader_prog_2d, planet_texture);
+
+    planet_sprite.scale = new Vec2(100);
+
+    planet_sprite.position = new Vec2(canvas.clientWidth / 2, canvas.clientHeight / 2)
+
+
     engine.root_node.push_child(pirate_ship);
+
+    engine.root_node.push_child(overlay_node);
+
+    overlay_node.push_child(planet_sprite);
+    
 
     engine.main_camera.position = (new Vec3(0, 2, 5)).mul(70);
 }

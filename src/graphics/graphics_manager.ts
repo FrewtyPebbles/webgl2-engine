@@ -203,6 +203,9 @@ export class GraphicsManager {
             return;
         }
         let uniform = this.shader_program.uniforms[label];
+        if (uniform === undefined) {
+            throw new Error(`The uniform "${label}" has not been registered for the shader program "${this.shader_program.name}".`)
+        }
         if (uniform.loc === null) {
             uniform.loc = this.gl.getUniformLocation(this.shader_program.webgl_shader_program!, label);
         }

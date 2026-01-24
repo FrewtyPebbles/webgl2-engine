@@ -2,7 +2,7 @@ import { Vec3, Vec2, Mat4, Quat } from '@vicimpa/glm';
 import { GraphicsManager, ShaderProgram } from './graphics_manager.ts';
 import { Node2D, Node3D, Node } from './node.ts';
 import { degrees_to_radians } from './utility.ts';
-import { CubeMapTexture, get_skybox_vao, Model, Texture, VAOInfo } from './assets.ts';
+import { CubeMapTexture, get_skybox_vao, get_sprite_vao, Model, Texture, VAOInfo } from './assets.ts';
 import Engine from '../engine.ts';
 
 
@@ -106,8 +106,8 @@ export class Skybox extends Node {
 
 export class Sprite2D extends Node2D {
     shader_program:ShaderProgram;
-
-    textures:{[key:string]:Texture} = {};
+    vao:VAOInfo;
+    sprite_texture:Texture;
 
     constructor(
         engine:Engine,
@@ -116,29 +116,44 @@ export class Sprite2D extends Node2D {
         sprite_texture:Texture
     ) {
         super(engine, name);
+        this.vao = get_sprite_vao(this.engine.graphics_manager);
         this.shader_program = shader_program;
-        this.textures["sprite_texture"] = sprite_texture;
+        this.sprite_texture = sprite_texture;
     }
 
     render(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
-        this.shader_program.use();
+        if (!this.shader_program)
+            throw Error(`Shader program not set for skybox.`);
 
         const gm = this.engine.graphics_manager;
 
-        for (const [label, texture] of Object.entries(this.textures)) {
-            gm.set_uniform(label, texture);
-        }
+        gm.gl.enable(gm.gl.BLEND);
+        gm.gl.blendFunc(gm.gl.SRC_ALPHA, gm.gl.ONE_MINUS_SRC_ALPHA);
+
+        this.shader_program.use();
+
+        // bind the texture
+        gm.set_uniform("sprite_texture", this.sprite_texture);
 
         // add the MVP matrix
         gm.set_uniform("u_model", this.get_world_matrix());
 
-        gm.set_uniform("u_view", view_matrix);
 
         gm.set_uniform("u_projection", projection_matrix_2d);
 
-        gm.clear_shader();
+        // render vao
+        gm.gl.bindVertexArray(this.vao.vao);
+        gm.gl.drawElements(gm.gl.TRIANGLES, this.vao.index_count, gm.gl.UNSIGNED_SHORT, 0);
+        gm.gl.bindVertexArray(null);
+
+        console.log("TEST");
+        
+
+        gm.clear_shader()
+        gm.gl.disable(gm.gl.BLEND);
 
         // render children
         super.render(view_matrix, projection_matrix_3d, projection_matrix_2d);
+
     }
 }
