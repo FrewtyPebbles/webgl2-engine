@@ -112,8 +112,8 @@ export class Sprite2D extends Node2D {
     constructor(
         engine:Engine,
         name:string,
-        shader_program:ShaderProgram,
-        sprite_texture:Texture
+        sprite_texture:Texture,
+        shader_program:ShaderProgram
     ) {
         super(engine, name);
         this.vao = get_sprite_vao(this.engine.graphics_manager);

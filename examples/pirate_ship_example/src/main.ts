@@ -123,7 +123,7 @@ async function startup(engine:Engine) {
 
     const overlay_node = new Node(engine, "overlay")
 
-    const planet_sprite = new Sprite2D(engine, "planet", shader_prog_2d, planet_texture);
+    const planet_sprite = new Sprite2D(engine, "planet", planet_texture, shader_prog_2d);
 
     planet_sprite.scale = new Vec2(100);
 
