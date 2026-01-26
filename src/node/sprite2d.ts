@@ -21,7 +21,7 @@ export class Sprite2D extends Node2D {
         this.sprite_texture = sprite_texture;
     }
 
-    render(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
+    render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
         if (!this.shader_program)
             throw Error(`Shader program not set for skybox.`);
 
@@ -44,16 +44,9 @@ export class Sprite2D extends Node2D {
         // render vao
         gm.gl.bindVertexArray(this.vao.vao);
         gm.gl.drawElements(gm.gl.TRIANGLES, this.vao.index_count, gm.gl.UNSIGNED_SHORT, 0);
-        gm.gl.bindVertexArray(null);
-
-        console.log("TEST");
-        
+        gm.gl.bindVertexArray(null);        
 
         gm.clear_shader()
         gm.gl.disable(gm.gl.BLEND);
-
-        // render children
-        super.render(view_matrix, projection_matrix_3d, projection_matrix_2d);
-
     }
 }

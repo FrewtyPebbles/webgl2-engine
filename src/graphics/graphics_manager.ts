@@ -434,7 +434,12 @@ export class GraphicsManager {
 
         // Render node heirarchy.
         const ortho_projection = (new Mat4()).orthoNO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
-        this.engine.root_node.render(this.engine.main_camera.get_view_matrix(), this.engine.main_camera.get_projection_matrix(this.canvas), ortho_projection);
+        this.engine.root_node.render(
+            this.engine.main_camera.get_view_matrix(),
+            this.engine.main_camera.get_projection_matrix(this.canvas),
+            ortho_projection,
+            time, delta_time
+        );
         
         return requestAnimationFrame((new_time)=>{return this.render_frame(update_callback, new_time);});
     }

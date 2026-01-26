@@ -15,7 +15,7 @@ export class Skybox extends Node {
         this.shader_program = shader_program;
         this.cubemap_texture = cubemap_texture;
     }
-    render(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
+    render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
         if (!this.shader_program)
             throw Error(`Shader program not set for skybox.`);
 
@@ -40,10 +40,6 @@ export class Skybox extends Node {
 
         gm.gl.depthFunc(gm.gl.LESS);
 
-        gm.clear_shader()
-
-        // render children
-        super.render(view_matrix, projection_matrix_3d, projection_matrix_2d);
-
+        gm.clear_shader();
     }
 }

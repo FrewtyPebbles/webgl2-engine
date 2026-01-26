@@ -42,8 +42,8 @@ export default class Engine {
 
     constructor(
         canvas:HTMLCanvasElement,
-        on_global_startup_callback:(engine:Engine) => Promise<void>,
-        on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void,
+        on_global_startup_callback:(engine:Engine) => Promise<void> = async(engine) => {},
+        on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void = (engine, time, delta_time) => {},
     ) {
         this.canvas = canvas;
         this.graphics_manager = new GraphicsManager(this, this.canvas);

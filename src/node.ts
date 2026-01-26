@@ -8,6 +8,9 @@ export class Node {
     name:string;
     parent:Node|null = null;
     children:Array<Node> = [];
+    on_ready_callback:(engine:Engine) => void = (engine) =>{};
+    on_removed_callback:(engine:Engine, parent:Node) => void = (engine, parent) =>{};
+    on_update_callback:(engine:Engine, time:number, delta_time:number) => void = (engine:Engine, time:number, delta_time:number) =>{};
 
     constructor(engine:Engine, name:string) {
         this.engine = engine
@@ -16,10 +19,12 @@ export class Node {
 
     push_child(node:Node) {
         if (node.parent) {
+            let parent = node.parent;
             node.parent.remove_child(node);
         }
         this.children.push(node);
         node.parent = this;
+        node.on_ready_callback(this.engine);
     }
 
     has_child(node:Node|string):boolean {
@@ -35,8 +40,9 @@ export class Node {
     }
 
     remove_child(node:Node|string) {
+        var index;
         if (node instanceof Node) {
-            const index = this.children.indexOf(node);
+            index = this.children.indexOf(node);
             if (index > -1) {
                 this.children.splice(index, 1);
             }
@@ -50,11 +56,14 @@ export class Node {
                 node_instance.parent = null;
 
             // remove from children of parent.
-            var index = 0;
+            index = 0;
 
             for (const child of this.children) {
-                if (child.name === node)
+                if (child.name === node) {
+                    node = child;
                     break;
+                }
+                    
                 index++;
             }
 
@@ -62,13 +71,25 @@ export class Node {
                 this.children.splice(index, 1);
             }
         }
-    }
-
-    render(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4) {
-        // render children
-        for (const child of this.children) {
-            child.render(view_matrix, projection_matrix_3d, projection_matrix_2d)
+        if (node instanceof Node) {
+            node.on_removed_callback(this.engine, this);
         }
+    }
+    
+    render(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
+        this.on_update_callback(this.engine, time, delta_time)
+        this.render_class(view_matrix, projection_matrix_3d, projection_matrix_2d);
+        this.render_children(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+    }
+    
+    protected render_children(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
+        for (const child of this.children) {
+            child.render(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time)
+        }
+    }
+    // This is the function where the webgl2 state is set to render.
+    protected render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
+
     }
 }
 

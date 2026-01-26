@@ -10,7 +10,7 @@ export class Object3D extends Node3D {
         super(engine, name);
         this.model = model;
     }
-    render(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
+    render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4): void {
         this.model.draw_start();
 
         // add the MVP matrix
@@ -21,8 +21,5 @@ export class Object3D extends Node3D {
         this.engine.graphics_manager.set_uniform("u_projection", projection_matrix_3d);
 
         this.model.draw_end();
-
-        // render children
-        super.render(view_matrix, projection_matrix_3d, projection_matrix_2d);
     }
 }

@@ -54,7 +54,13 @@ function update(engine:Engine, time:number, delta_time:number) {
 
     gm.gl.enable(gm.gl.DEPTH_TEST)
 
-    pirate_ship.render(engine.main_camera.get_view_matrix(), engine.main_camera.get_projection_matrix(engine.canvas), new Mat4());
+    pirate_ship.render(
+        engine.main_camera.get_view_matrix(),
+        engine.main_camera.get_projection_matrix(engine.canvas),
+        new Mat4(),
+        time,
+        delta_time
+    );
 
     gm.gl.disable(gm.gl.DEPTH_TEST)
 
@@ -159,7 +165,6 @@ async function startup(engine:Engine) {
     planet_sprite.scale = new Vec2(100);
 
     planet_sprite.position = new Vec2(canvas.clientWidth / 2, canvas.clientHeight / 2)
-
 
     engine.root_node.push_child(pirate_ship);
 
