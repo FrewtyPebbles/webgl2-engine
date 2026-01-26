@@ -8,9 +8,9 @@ export class Node {
     name:string;
     parent:Node|null = null;
     children:Array<Node> = [];
-    on_ready_callback:(engine:Engine) => void = (engine) =>{};
-    on_removed_callback:(engine:Engine, parent:Node) => void = (engine, parent) =>{};
-    on_update_callback:(engine:Engine, time:number, delta_time:number) => void = (engine:Engine, time:number, delta_time:number) =>{};
+    on_ready_callback:(node:this, engine:Engine) => void = (node, engine) =>{};
+    on_removed_callback:(node:this, engine:Engine, parent:Node) => void = (node, engine, parent) =>{};
+    on_update_callback:(node:this, engine:Engine, time:number, delta_time:number) => void = (node, engine:Engine, time:number, delta_time:number) =>{};
 
     constructor(engine:Engine, name:string) {
         this.engine = engine
@@ -24,7 +24,7 @@ export class Node {
         }
         this.children.push(node);
         node.parent = this;
-        node.on_ready_callback(this.engine);
+        node.on_ready_callback(this, this.engine);
     }
 
     has_child(node:Node|string):boolean {
@@ -72,12 +72,12 @@ export class Node {
             }
         }
         if (node instanceof Node) {
-            node.on_removed_callback(this.engine, this);
+            node.on_removed_callback(this, this.engine, this);
         }
     }
     
     render(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
-        this.on_update_callback(this.engine, time, delta_time)
+        this.on_update_callback(this, this.engine, time, delta_time)
         this.render_class(view_matrix, projection_matrix_3d, projection_matrix_2d);
         this.render_children(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
     }
