@@ -8,29 +8,22 @@ export class Node {
     name:string;
     parent:Node|null = null;
     children:Array<Node> = [];
-    on_ready_callback:(node:this, engine:Engine) => void = (node, engine) =>{};
-    on_removed_callback:(node:this, engine:Engine, parent:Node) => void = (node, engine, parent) =>{};
-    on_update_callback:(node:this, engine:Engine, time:number, delta_time:number) => void = (node, engine:Engine, time:number, delta_time:number) =>{};
+    on_ready_callback:(node:Node, engine:Engine) => void = (node, engine) =>{};
+    on_removed_callback:(node:Node, engine:Engine, parent:Node) => void = (node, engine, parent) =>{};
+    on_update_callback:(node:Node, engine:Engine, time:number, delta_time:number) => void = (node, engine:Engine, time:number, delta_time:number) =>{};
 
     constructor(engine:Engine, name:string) {
         this.engine = engine
         this.name = name;
     }
 
-    push_child(node:Node) {
-        if (node.parent) {
-            let parent = node.parent;
-            node.parent.remove_child(node);
-        }
-        this.children.push(node);
-        node.parent = this;
-        node.on_ready_callback(this, this.engine);
-    }
+    protected on_parented() {}
+    protected on_removed(parent:Node) {}
 
     has_child(node:Node|string):boolean {
         if (node instanceof Node)
             return this.children.includes(node);
-
+        
         // node is string
         for (const child of this.children) {
             if (child.name === node)
@@ -38,11 +31,24 @@ export class Node {
         }
         return false;
     }
+    
+    push_child(node:Node) {
+        if (node.parent) {
+            let parent = node.parent;
+            node.parent.remove_child(node);
+        }
+
+        this.children.push(node);
+        node.parent = this;
+        node.on_ready_callback(this, this.engine);
+        node.on_parented();
+    }
 
     remove_child(node:Node|string) {
         var index;
         if (node instanceof Node) {
-            index = this.children.indexOf(node);
+
+            index = this.children.indexOf(node as Node);
             if (index > -1) {
                 this.children.splice(index, 1);
             }
@@ -72,7 +78,8 @@ export class Node {
             }
         }
         if (node instanceof Node) {
-            node.on_removed_callback(this, this.engine, this);
+            node.on_removed_callback(node, this.engine, this);
+            node.on_removed(this);
         }
     }
     

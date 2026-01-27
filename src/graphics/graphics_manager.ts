@@ -2,6 +2,7 @@ import { Vec3, Vec2, Mat4, Quat, Vec4 } from '@vicimpa/glm';
 import { Node3D, Node } from '../node.ts';
 import { CubeMapTexture, Texture, TextureType } from './assets.ts';
 import Engine from '../engine.ts';
+import { normalize_uniform_label } from './utility.ts';
 
 // passthrough
 export const DEFAULT_VERTEX = `
@@ -43,8 +44,10 @@ export interface WebGLVertexAttribute {
 export enum WebGLUniformType {
     TEXTURE_2D,
     TEXTURE_CUBE_MAP,
+    STRUCT,
     F,
     I,
+    B,
     F2V,
     I2V,
     F3V,
@@ -53,12 +56,11 @@ export enum WebGLUniformType {
     I4V,
     F2M,
     F3M,
-    F4M
+    F4M,
 }
 
 export interface WebGLUniform {
     label:string;
-    loc:WebGLUniformLocation|null;
     type:WebGLUniformType;
     texture_unit?:number;
 };
@@ -173,6 +175,7 @@ export class ShaderProgram {
     shaders:Array<WebGLShader> = [];
     webgl_shader_program:WebGLProgram|null = null;
     uniforms:{[key:string]:WebGLUniform} = {};
+    uniform_locs:{[key:string]:WebGLUniformLocation|null} = {};
     texture_counter:number = 0;
 
     constructor(name:string, gm:GraphicsManager, gl:WebGLRenderingContext) {
@@ -192,11 +195,12 @@ export class ShaderProgram {
     }
 
     add_uniform(label:string, uniform_type:WebGLUniformType) {
+        label = normalize_uniform_label(label);
         this.uniforms[label] = {
             label,
-            loc:null,
-            type:uniform_type
+            type:uniform_type,
         }
+
         if (uniform_type === WebGLUniformType.TEXTURE_2D || uniform_type === WebGLUniformType.TEXTURE_CUBE_MAP) {
             this.uniforms[label].texture_unit = this.texture_counter;
             this.texture_counter += 1;
@@ -219,8 +223,19 @@ export class ShaderProgram {
         // find uniform locs
 
         for (let [label, uniform] of Object.entries(this.uniforms)) {
-            uniform.loc = this.gl.getUniformLocation(this.webgl_shader_program!, label);
+            if (label.startsWith("[]"))
+                continue;
+
+            console.log(this.webgl_shader_program, label);
+            
+            const loc = this.gl.getUniformLocation(this.webgl_shader_program!, label);
+            if (!loc) {
+                console.warn(`Uniform "${label}" not in use in shader program "${this.name}".`)
+            }
+
+            this.uniform_locs[label] = loc;
         }
+
         this.gm.clear_shader();
     }
 
@@ -342,63 +357,73 @@ export class GraphicsManager {
             console.warn(`Attempted to set ${label} uniform value to ${value} before a shader program was selected.`)
             return;
         }
-        let uniform = this.shader_program.uniforms[label];
+
+        const normalized_label = normalize_uniform_label(label);
+
+        let uniform = this.shader_program.uniforms[normalized_label];
         if (uniform === undefined) {
             throw new Error(`The uniform "${label}" has not been registered for the shader program "${this.shader_program.name}".`)
         }
-        if (uniform.loc === null) {
-            uniform.loc = this.gl.getUniformLocation(this.shader_program.webgl_shader_program!, label);
+        
+        if (!(label in this.shader_program.uniform_locs)) {
+            const loc = this.gl.getUniformLocation(this.shader_program.webgl_shader_program!, label);
+            if (!loc) {
+                console.warn(`Uniform "${label}" not in use in shader program "${this.shader_program.name}".`)
+            }
+            this.shader_program.uniform_locs[label] = loc;
         }
+        
         switch (uniform.type) {
             case WebGLUniformType.TEXTURE_2D:
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
                 this.gl.bindTexture(this.gl.TEXTURE_2D, (value as Texture).webgl_texture);
-                this.gl.uniform1i(uniform.loc!, uniform.texture_unit!);
+                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit!);
                 break;
 
             case WebGLUniformType.TEXTURE_CUBE_MAP:
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
                 this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, (value as CubeMapTexture).texture);
-                this.gl.uniform1i(uniform.loc!, uniform.texture_unit!);
+                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit!);
                 break;
 
             case WebGLUniformType.F:
-                this.gl.uniform1f(uniform.loc!, value);
+                this.gl.uniform1f(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.I:
-                this.gl.uniform1i(uniform.loc!, value);
+                this.gl.uniform1i(this.shader_program.uniform_locs[label], value);
+                break;
+
+            case WebGLUniformType.B:
+                this.gl.uniform1i(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.F2V:
-                this.gl.uniform2fv(uniform.loc!, value);
+                this.gl.uniform2fv(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.I2V:
-                this.gl.uniform2iv(uniform.loc!, value);
+                this.gl.uniform2iv(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.F3V:
-                this.gl.uniform3fv(uniform.loc!, value);
+                this.gl.uniform3fv(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.I3V:
-                this.gl.uniform3iv(uniform.loc!, value);
+                this.gl.uniform3iv(this.shader_program.uniform_locs[label], value);
                 break;
 
             case WebGLUniformType.F2M:
-                this.gl.uniformMatrix2fv(uniform.loc!, transpose, value);
+                this.gl.uniformMatrix2fv(this.shader_program.uniform_locs[label], transpose, value);
                 break;
 
             case WebGLUniformType.F3M:
-                this.gl.uniformMatrix3fv(uniform.loc!, transpose, value);
+                this.gl.uniformMatrix3fv(this.shader_program.uniform_locs[label], transpose, value);
                 break;
             
             case WebGLUniformType.F4M:
-                this.gl.uniformMatrix4fv(uniform.loc!, transpose, value);
-                break;
-        
-            default:
+                this.gl.uniformMatrix4fv(this.shader_program.uniform_locs[label], transpose, value);
                 break;
         }
     }

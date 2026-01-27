@@ -1,4 +1,4 @@
-import { Mesh, Model, Texture, TextureType } from "../assets.ts";
+import { Material, Mesh, Model, Texture, TextureType } from "../assets.ts";
 import { GraphicsManager } from "../graphics_manager.ts";
 
 interface OBJData {
@@ -103,7 +103,7 @@ export async function load_obj(gm:GraphicsManager, model_path:string, image_asse
 
     // Build the model
     var mesh = new Mesh(gm, obj.vertices, obj.normals, obj.uvs, obj.indices);
-    var model = new Model(gm, mesh, { texture_albedo:image_assets[0] });
+    var model = new Model(gm, mesh, new Material(gm, image_assets[0], 0.0, 0.0, 0.0));
 
     return model;
 }

@@ -3,12 +3,21 @@ import { Camera3D } from "./node/camera3d.ts";
 import { Node } from "./node.ts";
 import { InputManager } from "./input/input_manager.ts";
 import Utility from "./utility.ts";
+import { DirectionalLight, Light, PointLight, SpotLight } from "./node/lights.ts";
 
 
 export default class Engine {
     canvas:HTMLCanvasElement;
     graphics_manager:GraphicsManager;
     input_manager:InputManager;
+
+    // This keeps track of all lights in the scene tree,
+    // makes it more efficient to render all the lights.
+    point_lights:PointLight[] = [];
+    directional_lights:DirectionalLight[] = [];
+    spot_lights:SpotLight[] = [];
+    
+    // EVENT CALLBACKS
     on_global_startup_callback:(engine:Engine) => Promise<void>;
     on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void;
 

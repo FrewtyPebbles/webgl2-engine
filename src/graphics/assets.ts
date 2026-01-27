@@ -1,4 +1,6 @@
+import { Vec3 } from "@vicimpa/glm";
 import { GraphicsManager, ShaderProgram } from "./graphics_manager.ts";
+import Engine from "../engine.ts";
 
 var skybox_VAO:WebGLVertexArrayObject|null = null
 var skybox_VAO_index_count:number = 0;
@@ -364,17 +366,75 @@ export interface ModelOptionsObject {
     enable_depth_test?:boolean;
 }
 
-type TexturesMap = {
-    texture_albedo?: TextureTypes;
-    skybox_texture?: TextureTypes;
-    [key: string]: TextureTypes | undefined;
-};
+export class Material {
+    gm:GraphicsManager;
+    albedo:Vec3|Texture;
+    metalic:number|Texture;
+    roughness:number|Texture;
+    ao:number|Texture;
+    normal:Texture|null = null;
+
+    constructor(
+        gm:GraphicsManager,
+        albedo:Vec3|Texture,
+        metalic:number|Texture,
+        roughness:number|Texture,
+        ao:number|Texture,
+        normal:Texture|null = null
+    ) {
+        this.gm = gm;
+        this.albedo = albedo;
+        this.metalic = metalic;
+        this.roughness = roughness;
+        this.ao = ao;
+        this.normal = normal;
+    }
+
+    set_shader_uniforms(shader_program:ShaderProgram): void {
+        shader_program.use();
+        this.set_uniforms();
+        this.gm.clear_shader();
+    }
+
+    set_uniforms(): void {
+        if (this.normal === null) {
+            this.gm.set_uniform(`material.has_normal_texture`, false);
+        } else {
+            this.gm.set_uniform(`material.has_normal_texture`, true);
+            this.gm.set_uniform(`material_texture_normal`, this.normal);
+        }
+
+        if (this.albedo instanceof Texture) {
+            this.gm.set_uniform(`material.has_albedo_texture`, true);
+            this.gm.set_uniform(`material_texture_albedo`, this.albedo);
+        } else {
+            this.gm.set_uniform(`material.has_albedo_texture`, false);
+            this.gm.set_uniform(`material.albedo`, this.albedo);
+        }
+
+        if (this.metalic instanceof Texture) {
+            this.gm.set_uniform(`material.has_metalic_texture`, true);
+            this.gm.set_uniform(`material_texture_metalic`, this.metalic);
+        } else {
+            this.gm.set_uniform(`material.has_metalic_texture`, false);
+            this.gm.set_uniform(`material.metalic`, this.metalic);
+        }
+
+        if (this.roughness instanceof Texture) {
+            this.gm.set_uniform(`material.has_roughness_texture`, true);
+            this.gm.set_uniform(`material_texture_roughness`, this.roughness);
+        } else {
+            this.gm.set_uniform(`material.has_roughness_texture`, false);
+            this.gm.set_uniform(`material.roughness`, this.roughness);
+        }
+    }
+}
 
 export class Model {
     gm:GraphicsManager;
     mesh:Mesh;
     shader_program:ShaderProgram|null;
-    textures:TexturesMap = {};
+    material:Material;
 
     // OPTIONS
     enable_depth_test:boolean = true;
@@ -382,7 +442,7 @@ export class Model {
     constructor(
         gm:GraphicsManager,
         mesh:Mesh,
-        textures:TexturesMap = {},
+        material:Material,
         options:ModelOptionsObject = {},
         shader_program:string|ShaderProgram|null = null
     ) {
@@ -397,7 +457,7 @@ export class Model {
             this.shader_program = null;
         }
         this.mesh = mesh;
-        this.textures = textures;
+        this.material = material;
 
         if (options.enable_depth_test !== undefined)
             this.enable_depth_test = options.enable_depth_test;
@@ -411,9 +471,6 @@ export class Model {
         }
     }
 
-    add_texture(uniform_name:string, texture:Texture) {
-        this.textures[uniform_name] = texture;
-    }
 
     draw_start() {
         if (!this.shader_program)
@@ -425,9 +482,8 @@ export class Model {
             this.gm.gl.disable(this.gm.gl.DEPTH_TEST);
 
         this.shader_program.use();
-        for (const [label, texture] of Object.entries(this.textures)) {
-            this.gm.set_uniform(label, texture);
-        }
+        
+        this.material.set_uniforms();
     }
 
     draw_end() {

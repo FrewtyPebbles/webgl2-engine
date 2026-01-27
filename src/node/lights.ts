@@ -1,38 +1,46 @@
 import { Mat4, Vec3, Vec4 } from "@vicimpa/glm";
 import Engine from "../engine.ts";
-import { Node3D } from "../node.ts";
+import { Node, Node3D } from "../node.ts";
 import { ShaderProgram } from "../graphics/graphics_manager.ts";
 
 export class Light extends Node3D {
-    ambient:Vec3;
-    diffuse:Vec3;
-    specular:Vec3;
+    color:Vec3;
+    ambient:number;
+    diffuse:number;
+    specular:number;
+    energy:number;// radiant flux
 
     constructor(
         engine:Engine,
         name:string,
-        ambient:Vec3,
-        diffuse:Vec3,
-        specular:Vec3
+        color:Vec3,
+        ambient:number,
+        diffuse:number,
+        specular:number,
+        energy:number,
     ) {
         super(engine, name);
+        this.color = color;
         this.ambient = ambient;
         this.diffuse = diffuse;
         this.specular = specular;
+        this.energy = energy;
     }
 
 
 
-    bind(shader_program:ShaderProgram, array_name:string, index:number): void {
+    set_shader_uniforms(shader_program:ShaderProgram, array_name:string, index:number): void {
         shader_program.use();
-        this.set_uniforms(shader_program, array_name, index);
+        this.set_uniforms(array_name, index);
         this.engine.graphics_manager.clear_shader();
     }
 
-    set_uniforms(shader_program:ShaderProgram, array_name:string, index:number): void {
+    set_uniforms(array_name:string, index:number): void {
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].color`, this.color);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].ambient`, this.ambient);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].diffuse`, this.diffuse);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].specular`, this.specular);
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].energy`, this.energy);
     }
 }
 
@@ -42,22 +50,35 @@ export class PointLight extends Light {
     constructor(
         engine:Engine,
         name:string,
-        ambient:Vec3,
-        diffuse:Vec3,
-        specular:Vec3,
+        color:Vec3,
+        ambient:number,
+        diffuse:number,
+        specular:number,
+        energy:number,
         range:number,
     ) {
-        super(engine, name, ambient, diffuse, specular);
+        super(engine, name, color, ambient, diffuse, specular, energy);
         this.ambient = ambient;
         this.diffuse = diffuse;
         this.specular = specular;
         this.range = range;
     }
 
-    set_uniforms(shader_program: ShaderProgram, array_name: string, index: number): void {
+    set_uniforms(array_name: string, index: number): void {
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, this.position);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
-        super.set_uniforms(shader_program, array_name, index);
+        super.set_uniforms(array_name, index);
+    }
+
+    protected on_parented(): void {
+        this.engine.point_lights.push(this);
+    }
+
+    protected on_removed(parent: Node): void {
+        let light_index = this.engine.point_lights.indexOf(this);
+        if (light_index > -1) {
+            this.engine.point_lights.splice(light_index, 1);
+        }
     }
 }
 
@@ -68,13 +89,15 @@ export class SpotLight extends Light {
     constructor(
         engine:Engine,
         name:string,
-        ambient:Vec3,
-        diffuse:Vec3,
-        specular:Vec3,
+        color:Vec3,
+        ambient:number,
+        diffuse:number,
+        specular:number,
+        energy:number,
         range:number,
         cookie_radius:number,
     ) {
-        super(engine, name, ambient, diffuse, specular);
+        super(engine, name, color, ambient, diffuse, specular, energy);
         this.ambient = ambient;
         this.diffuse = diffuse;
         this.specular = specular;
@@ -82,12 +105,23 @@ export class SpotLight extends Light {
         this.cookie_radius = cookie_radius;
     }
 
-    set_uniforms(shader_program: ShaderProgram, array_name: string, index: number): void {
+    set_uniforms(array_name: string, index: number): void {
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, this.position);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, new Mat4().fromQuat(this.rotation));
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].cookie_radius`, this.cookie_radius);
-        super.set_uniforms(shader_program, array_name, index);
+        super.set_uniforms(array_name, index);
+    }
+
+    protected on_parented(): void {
+        this.engine.spot_lights.push(this);
+    }
+
+    protected on_removed(parent: Node): void {
+        let light_index = this.engine.spot_lights.indexOf(this);
+        if (light_index > -1) {
+            this.engine.spot_lights.splice(light_index, 1);
+        }
     }
 }
 
@@ -95,18 +129,31 @@ export class DirectionalLight extends Light {
     constructor(
         engine:Engine,
         name:string,
-        ambient:Vec3,
-        diffuse:Vec3,
-        specular:Vec3,
+        color:Vec3,
+        ambient:number,
+        diffuse:number,
+        specular:number,
+        energy:number,
     ) {
-        super(engine, name, ambient, diffuse, specular);
+        super(engine, name, color, ambient, diffuse, specular, energy);
         this.ambient = ambient;
         this.diffuse = diffuse;
         this.specular = specular;
     }
 
-    set_uniforms(shader_program: ShaderProgram, array_name: string, index: number): void {
+    set_uniforms(array_name: string, index: number): void {
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, new Mat4().fromQuat(this.rotation));
-        super.set_uniforms(shader_program, array_name, index);
+        super.set_uniforms(array_name, index);
+    }
+
+    protected on_parented(): void {
+        this.engine.directional_lights.push(this);
+    }
+
+    protected on_removed(parent: Node): void {
+        let light_index = this.engine.directional_lights.indexOf(this);
+        if (light_index > -1) {
+            this.engine.directional_lights.splice(light_index, 1);
+        }
     }
 }
