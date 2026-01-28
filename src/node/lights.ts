@@ -1,4 +1,4 @@
-import { Mat4, Vec3, Vec4 } from "@vicimpa/glm";
+import { Mat3, Mat4, Quat, Vec3, Vec4 } from "@vicimpa/glm";
 import Engine from "../engine.ts";
 import { Node, Node3D } from "../node.ts";
 import { ShaderProgram } from "../graphics/shader_program.ts";
@@ -65,7 +65,8 @@ export class PointLight extends Light {
     }
 
     set_uniforms(array_name: string, index: number): void {
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, this.position);
+        const world_matrix = this.get_world_matrix();
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, new Vec3(world_matrix[12], world_matrix[13], world_matrix[14]));
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
         super.set_uniforms(array_name, index);
     }
@@ -106,8 +107,19 @@ export class SpotLight extends Light {
     }
 
     set_uniforms(array_name: string, index: number): void {
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, this.position);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, new Mat4().fromQuat(this.rotation));
+        const world_matrix = this.get_world_matrix();
+        
+        const transformed_position = new Vec4(this.position.x, this.position.y, this.position.z, 1.0)
+            .applyMat4(world_matrix);
+
+        const world_mat3 = new Mat3().fromMat4(world_matrix); 
+
+        const world_rotation = new Quat().fromMat3(world_mat3).normalize();
+
+        const world_rotation_matrix = new Mat4().fromQuat(world_rotation);
+        
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, new Vec3(world_matrix[12], world_matrix[13], world_matrix[14]));
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, world_rotation_matrix);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
         this.engine.graphics_manager.set_uniform(`${array_name}[${index}].cookie_radius`, this.cookie_radius);
         super.set_uniforms(array_name, index);
@@ -142,7 +154,11 @@ export class DirectionalLight extends Light {
     }
 
     set_uniforms(array_name: string, index: number): void {
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, new Mat4().fromQuat(this.rotation));
+        const world_matrix = this.get_world_matrix();
+        const world_mat3 = new Mat3().fromMat4(world_matrix); 
+        const world_rotation = new Quat().fromMat3(world_mat3).normalize();
+        const world_rotation_matrix = new Mat4().fromQuat(world_rotation);
+        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, world_rotation_matrix);
         super.set_uniforms(array_name, index);
     }
 

@@ -1,8 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { globSync } from 'glob'; // npm install glob
+import { globSync } from 'glob';
 
-const shaders:fs.PathOrFileDescriptor[] = globSync('src/**/*.fs');
+const extensions = [".fs", ".vs", ".gs", ".glsl"]
+
+var shaders:fs.PathOrFileDescriptor[] = [];
+
+for (const extension of extensions) {
+  shaders = shaders.concat(globSync(`src/**/*${extension}`));
+}
 
 shaders.forEach(file => {
   const content = fs.readFileSync(file, 'utf8');

@@ -14,11 +14,11 @@ export class Sprite2D extends Node2D {
         engine:Engine,
         name:string,
         sprite_texture:Texture,
-        shader_program:ShaderProgram
+        shader_program:ShaderProgram|null = null
     ) {
         super(engine, name);
         this.vao = get_sprite_vao(this.engine.graphics_manager);
-        this.shader_program = shader_program;
+        this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.default_2d_shader_program;
         this.sprite_texture = sprite_texture;
     }
 

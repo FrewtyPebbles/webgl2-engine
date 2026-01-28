@@ -15,8 +15,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "ts-node /sync_shaders.mts && tsc",
-    "build:watch": "ts-node /sync_shaders.mts && tsc --watch",
+    "build": "ts-node build_scripts/sync_shaders.mts && tsc",
+    "build:watch": "ts-node build_scripts/sync_shaders.mts && tsc --watch",
     "clean": "rimraf dist"
   },
   "keywords": [

@@ -1,4 +1,4 @@
-#version 300 es
+export default `#version 300 es
 precision highp float;
 
 in vec2 v_uv;
@@ -10,3 +10,4 @@ uniform sampler2D sprite_texture;
 void main() {
     frag_color = texture(sprite_texture, vec2(v_uv.x, v_uv.y));
 }
+`;

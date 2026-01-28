@@ -84,8 +84,6 @@ export class ShaderProgram {
         for (let [label, uniform] of Object.entries(this.uniforms)) {
             if (label.startsWith("[]"))
                 continue;
-
-            console.log(this.webgl_shader_program, label);
             
             const loc = this.gl.getUniformLocation(this.webgl_shader_program!, label);
             if (!loc) {

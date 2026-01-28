@@ -1,4 +1,4 @@
-#version 300 es
+export default `#version 300 es
 precision highp float;
 
 layout(location = 0) in vec3 a_position;
@@ -19,3 +19,4 @@ void main() {
     // Make sure depth is at far plane
     gl_Position = gl_Position.xyww;
 }
+`;

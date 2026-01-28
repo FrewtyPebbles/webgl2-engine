@@ -7,14 +7,14 @@ import { ShaderProgram, WebGLUniformType } from './shader_program.ts';
 import { AttachmentInfo, AttachmentType, Framebuffer } from './framebuffer.ts';
 import { CubeMapTexture, Texture } from './assets/texture.ts';
 
-import DEFAULT_2D_VERTEX_SHADER from '../shaders/default_2d.vs';
-import DEFAULT_2D_FRAGMENT_SHADER from '../shaders/default_2d.fs';
+import DEFAULT_2D_VERTEX_SHADER from '../shaders/default_2d.vs.ts';
+import DEFAULT_2D_FRAGMENT_SHADER from '../shaders/default_2d.fs.ts';
 
-import DEFAULT_3D_VERTEX_SHADER from '../shaders/default_3d.vs';
-import DEFAULT_3D_FRAGMENT_SHADER from '../shaders/default_3d.fs';
+import DEFAULT_3D_VERTEX_SHADER from '../shaders/default_3d.vs.ts';
+import DEFAULT_3D_FRAGMENT_SHADER from '../shaders/default_3d.fs.ts';
 
-import DEFAULT_SKYBOX_VERTEX_SHADER from '../shaders/default_skybox.vs';
-import DEFAULT_SKYBOX_FRAGMENT_SHADER from '../shaders/default_skybox.fs';
+import DEFAULT_SKYBOX_VERTEX_SHADER from '../shaders/default_skybox.vs.ts';
+import DEFAULT_SKYBOX_FRAGMENT_SHADER from '../shaders/default_skybox.fs.ts';
 
 export type WebGLType = number;
 

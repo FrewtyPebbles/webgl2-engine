@@ -11,10 +11,15 @@ export class Skybox extends Node {
     cubemap_texture:CubeMapTexture;
     ambient_light:Vec3;
 
-    constructor(engine:Engine, name:string, cubemap_texture:CubeMapTexture, shader_program:ShaderProgram, ambient_light:Vec3) {
+    constructor(engine:Engine,
+        name:string,
+        cubemap_texture:CubeMapTexture,
+        ambient_light:Vec3,
+        shader_program:ShaderProgram|null = null,
+    ) {
         super(engine, name);
         this.vao = get_skybox_vao(this.engine.graphics_manager);
-        this.shader_program = shader_program;
+        this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.default_skybox_shader_program;
         this.cubemap_texture = cubemap_texture;
         this.ambient_light = ambient_light;
     }
