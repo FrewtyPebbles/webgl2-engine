@@ -32,7 +32,7 @@ export class Framebuffer {
     use_depth_buffer:boolean = false;
     textures:{[name:string]:Texture|CubeMapTexture} = {};
     color_attachment_count:number = 0;
-    read_source_color_attachment:number|null = null
+    read_source_color_attachment:number = 0
 
     constructor(name:string, gm:GraphicsManager, gl:WebGL2RenderingContext, width:number, height:number, attachment_infos:AttachmentInfo[], clear_color:Vec4 = new Vec4(0,0,0,1), read_from_back_buffer:boolean = false) {
         this.name = name
@@ -54,10 +54,11 @@ export class Framebuffer {
         this.gl.drawBuffers(attachment_numbers.length ? attachment_numbers : [gl.NONE]);
         if (read_from_back_buffer)
             this.gl.readBuffer(this.gl.BACK);
-        else if (this.read_source_color_attachment === null)
+        else if (this.read_source_color_attachment === this.gl.NONE)
             this.gl.readBuffer(this.gl.NONE);
         else
             this.gl.readBuffer(this.read_source_color_attachment);
+        
         if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
             throw Error(`Framebuffer incomplete, STATUS = ${gl.checkFramebufferStatus(gl.FRAMEBUFFER)}`);
         }
@@ -124,8 +125,8 @@ export class Framebuffer {
     private create_attachment_depth_texture(attachment:AttachmentInfo) {
         var tex_parameters:{[key:number]:number} = 
             attachment.texture_parameters === undefined ? {} : attachment.texture_parameters;
-        tex_parameters[this.gl.TEXTURE_MIN_FILTER] = this.gl.LINEAR;
-        tex_parameters[this.gl.TEXTURE_MAG_FILTER] = this.gl.LINEAR;
+        tex_parameters[this.gl.TEXTURE_MIN_FILTER] = this.gl.NEAREST;
+        tex_parameters[this.gl.TEXTURE_MAG_FILTER] = this.gl.NEAREST;
         tex_parameters[this.gl.TEXTURE_WRAP_S] = this.gl.CLAMP_TO_EDGE;
         tex_parameters[this.gl.TEXTURE_WRAP_T] = this.gl.CLAMP_TO_EDGE;
         
@@ -151,8 +152,8 @@ export class Framebuffer {
     private create_attachment_depth_cubemap_texture(attachment:AttachmentInfo) {
         var tex_parameters:{[key:number]:number} = 
             attachment.texture_parameters === undefined ? {} : attachment.texture_parameters;
-        tex_parameters[this.gl.TEXTURE_MIN_FILTER] = this.gl.LINEAR;
-        tex_parameters[this.gl.TEXTURE_MAG_FILTER] = this.gl.LINEAR;
+        tex_parameters[this.gl.TEXTURE_MIN_FILTER] = this.gl.NEAREST;
+        tex_parameters[this.gl.TEXTURE_MAG_FILTER] = this.gl.NEAREST;
         tex_parameters[this.gl.TEXTURE_WRAP_S] = this.gl.CLAMP_TO_EDGE;
         tex_parameters[this.gl.TEXTURE_WRAP_T] = this.gl.CLAMP_TO_EDGE;
         
@@ -161,7 +162,10 @@ export class Framebuffer {
         this.textures[attachment.name] = new CubeMapTexture(
             this.gm,
             this.width,
-            TextureType.DEPTH
+            TextureType.DEPTH,
+            0,
+            this.gl.UNSIGNED_INT,
+            tex_parameters
         );
 
         const faces = [

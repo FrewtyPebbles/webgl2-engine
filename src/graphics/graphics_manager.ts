@@ -2,7 +2,6 @@ import { Vec3, Vec2, Mat4, Quat, Vec4 } from '@vicimpa/glm';
 import { Node3D, Node } from '../node.ts';
 import Engine from '../engine.ts';
 import { normalize_uniform_label } from './utility.ts';
-import { ShadowMap } from './lighting/shadow_map.ts';
 import { ShaderProgram, WebGLUniformType } from './shader_program.ts';
 import { AttachmentInfo, AttachmentType, Framebuffer } from './framebuffer.ts';
 import { CubeMapTexture, Texture } from './assets/texture.ts';
@@ -15,6 +14,9 @@ import DEFAULT_3D_FRAGMENT_SHADER from '../shaders/default_3d.fs.ts';
 
 import DEFAULT_SKYBOX_VERTEX_SHADER from '../shaders/default_skybox.vs.ts';
 import DEFAULT_SKYBOX_FRAGMENT_SHADER from '../shaders/default_skybox.fs.ts';
+
+import DEFAULT_DIRECTIONAL_SHADOW_VERTEX_SHADER from "../shaders/default_directional_shadow.vs.ts";
+import DEFAULT_DIRECTIONAL_SHADOW_FRAGMENT_SHADER from "../shaders/default_directional_shadow.fs.ts";
 
 export type WebGLType = number;
 
@@ -42,9 +44,6 @@ export class GraphicsManager {
     
     prev_time:number = 0;
     
-    // SHADOW MAPPING
-    shadow_map:ShadowMap;
-
     // DEFAULT SHADERS
     default_2d_shader_program:ShaderProgram;
     default_3d_shader_program:ShaderProgram;
@@ -61,21 +60,6 @@ export class GraphicsManager {
         this.default_2d_shader_program = this.create_default_2d_shader_program();
         this.default_3d_shader_program = this.create_default_3d_shader_program();
         this.default_skybox_shader_program = this.create_default_skybox_shader_program();
-
-        this.shadow_map = new ShadowMap(
-            this.engine,
-            1040,
-            this.create_framebuffer(
-                "depth",
-                512,
-                512,
-                [
-                    {
-                        name:"depth",
-                        type:AttachmentType.CUBEMAP_TEXTURE_DEPTH
-                    }
-                ]
-            ));
     }
 
     webgl_enabled():boolean {
@@ -121,7 +105,7 @@ export class GraphicsManager {
         return prog;
     }
 
-    use_shader(name:string) {
+    use_shader(name:string) {        
         if (this.shader_program)
             this.clear_shader();
         this.shader_program = this.shader_programs[name];
@@ -145,9 +129,11 @@ export class GraphicsManager {
         this.framebuffer = this.framebuffers[name];
         this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.webgl_frame_buffer);
         this.gl.viewport(0, 0, this.framebuffer.width, this.framebuffer.height);
-        if (this.framebuffer.use_depth_buffer) {
-            this.gl.clear(this.gl.DEPTH_BUFFER_BIT)
+        if (this.framebuffer.use_depth_buffer) {            
             this.gl.enable(this.gl.DEPTH_TEST);
+            this.gl.clearDepth(1.0);
+            this.gl.depthMask(true);
+            this.gl.depthFunc(this.gl.LESS);
         }
         const cc = this.framebuffer.clear_color;
         this.gl.clearColor(cc.x, cc.y, cc.z, cc.w);
@@ -168,9 +154,10 @@ export class GraphicsManager {
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    set_uniform(label:string, value:any, transpose:boolean = false) {
+    set_uniform(label:string, value:any, transpose:boolean = false, warn:boolean = false) {
         if (this.shader_program === null) {
-            console.warn(`Attempted to set ${label} uniform value to ${value} before a shader program was selected.`)
+            if (warn)
+                console.warn(`Attempted to set ${label} uniform value to ${value} before a shader program was selected.`)
             return;
         }
 
@@ -178,13 +165,16 @@ export class GraphicsManager {
 
         let uniform = this.shader_program.uniforms[normalized_label];
         if (uniform === undefined) {
-            throw new Error(`The uniform "${label}" has not been registered for the shader program "${this.shader_program.name}".`)
+            if (warn)
+                console.warn(`The uniform "${label}" has not been registered for the shader program "${this.shader_program.name}".`)
+            return;
         }
         
         if (!(label in this.shader_program.uniform_locs)) {
             const loc = this.gl.getUniformLocation(this.shader_program.webgl_shader_program!, label);
             if (!loc) {
-                console.warn(`Uniform "${label}" not in use in shader program "${this.shader_program.name}".`)
+                if (warn)
+                    console.warn(`Uniform "${label}" not in use in shader program "${this.shader_program.name}".`)
             }
             this.shader_program.uniform_locs[label] = loc;
         }
@@ -269,15 +259,13 @@ export class GraphicsManager {
         update_callback(this, time, delta_time);
         
         this.resize_canvas();
-
-        this.shadow_map.render(time, delta_time);
         
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         this.gl.clearColor(0, 0, 0, 0);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
         // Render node heirarchy.
-        const ortho_projection = (new Mat4()).orthoNO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
+        const ortho_projection = (new Mat4()).orthoZO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
         if (this.engine.main_scene.main_camera_3d) {
             this.engine.main_scene.render(
                 this.engine.main_scene.main_camera_3d.get_view_matrix(),
@@ -381,6 +369,10 @@ export class GraphicsManager {
         shader_prog_3d.add_uniform("material_texture_metalic", WebGLUniformType.TEXTURE_2D);
         shader_prog_3d.add_uniform("material_texture_roughness", WebGLUniformType.TEXTURE_2D);
         shader_prog_3d.add_uniform("material_texture_ao", WebGLUniformType.TEXTURE_2D);
+        
+        // shadows
+        shader_prog_3d.add_uniform("u_directional_light_space_matrix[]", WebGLUniformType.F4M);
+        shader_prog_3d.add_uniform("directional_light_shadow_map[]", WebGLUniformType.TEXTURE_2D);
 
         shader_prog_3d.build();
 
@@ -401,5 +393,19 @@ export class GraphicsManager {
         shader_prog_skybox.build();
 
         return shader_prog_skybox;
+    }
+
+    create_default_directional_shadow_shader_program():ShaderProgram {
+        const sp = this.create_shader_program("default_directional_shadow_shader_program");
+
+        sp.add_shader(this.gl.VERTEX_SHADER, DEFAULT_DIRECTIONAL_SHADOW_VERTEX_SHADER);
+        sp.add_shader(this.gl.FRAGMENT_SHADER, DEFAULT_DIRECTIONAL_SHADOW_FRAGMENT_SHADER);
+
+        sp.add_uniform("u_light_space_matrix", WebGLUniformType.F4M);
+        sp.add_uniform("u_model", WebGLUniformType.F4M);
+
+        sp.build()
+
+        return sp;
     }
 }

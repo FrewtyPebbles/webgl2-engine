@@ -125,7 +125,7 @@ export class Material {
         }
 
         this.shader_program.use();
-        
+
         this.set_uniforms();
     }
 

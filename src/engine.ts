@@ -29,12 +29,12 @@ export default class Engine {
         on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void = (engine, time, delta_time) => {},
     ) {
         this.canvas = canvas;
-        this.graphics_manager = new GraphicsManager(this, this.canvas);
+        this.main_scene = main_scene ? main_scene : new Scene(this, "main_scene");
         this.input_manager = new InputManager(this);
         this.hook_manager = new HookManager(this);
         this.on_global_start_callback = on_global_start_callback;
         this.on_global_update_callback = on_global_update_callback;
-        this.main_scene = main_scene ? main_scene : new Scene(this, "main_scene");
+        this.graphics_manager = new GraphicsManager(this, this.canvas);
     }
 
     async start() {

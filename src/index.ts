@@ -4,7 +4,6 @@ export * from "./graphics/assets/material.ts";
 export * from "./graphics/assets/mesh.ts";
 export * from "./graphics/assets/model.ts";
 export * from "./graphics/assets/texture.ts";
-export * from "./graphics/lighting/shadow_map.ts";
 export * from "./graphics/framebuffer.ts";
 export * from "./graphics/shader_program.ts";
 export * from "./graphics/graphics_manager.ts";

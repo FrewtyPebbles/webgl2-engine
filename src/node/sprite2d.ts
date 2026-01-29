@@ -23,6 +23,8 @@ export class Sprite2D extends Node2D {
     }
 
     render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        if (this.engine.main_scene.rendering_depth_map)
+            return;
         if (!this.shader_program)
             throw Error(`Shader program not set for skybox.`);
 

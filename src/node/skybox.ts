@@ -24,13 +24,15 @@ export class Skybox extends Node {
         this.ambient_light = ambient_light;
     }
     render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        if (this.engine.main_scene.rendering_depth_map)
+            return;
         if (!this.shader_program)
             throw Error(`Shader program not set for skybox.`);
 
         const gm = this.engine.graphics_manager;
 
         gm.gl.depthFunc(gm.gl.LEQUAL);
-
+        
         this.shader_program.use();
 
         this.on_update(this, this.engine, time, delta_time);

@@ -1,17 +1,19 @@
 #version 300 es
-precision highp float;
-
-in vec3 v_normal;
-in vec2 v_uv;
-in vec3 v_frag_pos;
-
-
-out vec4 frag_color;
-
 #define N_POINT_LIGHTS 50
 #define N_SPOT_LIGHTS 50
 #define N_DIRECTIONAL_LIGHTS 10
 #define PI 3.14159265358979323846264338327950288419716939937510
+precision highp float;
+precision highp sampler2DArray;
+
+in vec3 v_normal;
+in vec2 v_uv;
+in vec3 v_frag_pos;
+in vec4 v_frag_pos_light_space[N_DIRECTIONAL_LIGHTS];
+
+
+out vec4 frag_color;
+
 
 struct Environment {
     vec3 ambient_light;
@@ -87,7 +89,7 @@ uniform Environment environment;
 
 uniform vec3 camera_position;
 
-uniform samplerCube depth_cubemap;
+uniform sampler2DArray directional_light_shadow_map;
 
 float L(PointLight light);
 float L(DirectionalLight light);
@@ -105,6 +107,8 @@ vec3 calculate_directional_lighting(vec4 base_color);
 
 vec3 calculate_lighting(vec4 base_color);
 
+float calculate_shadow(vec4 frag_pos_light_space);
+
 void main() {
     vec4 base_color = texture(material_texture_albedo, v_uv);
 
@@ -113,6 +117,20 @@ void main() {
     base_color.rgb = environment.ambient_light * base_color.rgb + lighting;
 
     frag_color = base_color;
+}
+
+float calculate_shadow(int index) {
+    vec4 frag_pos_light_space = v_frag_pos_light_space[index];
+    vec3 proj_coords = frag_pos_light_space.xyz / frag_pos_light_space.w;
+    proj_coords = proj_coords * 0.5 + 0.5;
+
+    float closest_depth = texture(directional_light_shadow_map, vec3(proj_coords.xy, float(index))).z;
+    
+    float current_depth = proj_coords.z;
+    
+    float shadow = current_depth > closest_depth ? 1.0 : 0.0;
+
+    return shadow;
 }
 
 vec3 calculate_lighting(vec4 base_color) {
@@ -133,7 +151,9 @@ vec3 calculate_point_lighting(vec4 base_color) {
         vec3 light_dir = normalize(light.position - v_frag_pos);
         float n_dot_l = max(dot(v_normal, light_dir), 0.0);
         vec3 product = Fr(light_dir, base_color) * L(light) * n_dot_l;
-        cumulative_radiance += product * light.color;
+        float shadow = calculate_shadow(i);
+        float visibility = 1.0 - shadow;
+        cumulative_radiance += product * light.color * visibility;
     }
 
     return cumulative_radiance;

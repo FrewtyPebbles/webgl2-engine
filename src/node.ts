@@ -142,7 +142,7 @@ export class Node {
     
     protected render_children(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
         for (const child of this.children) {
-            child.render(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time)
+            child.render(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
         }
     }
     // This is the function where the webgl2 state is set to render.

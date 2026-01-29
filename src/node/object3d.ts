@@ -62,16 +62,6 @@ export class Object3D extends Node3D {
         if (index)
             this.engine.graphics_manager.set_uniform("directional_lights_count", index);
 
-        // handle shadows
-        if (this.engine.graphics_manager.shadow_map.point_shadow_framebuffer) {
-            if ("depth" in this.engine.graphics_manager.shadow_map.point_shadow_framebuffer.textures) {
-                const depth_cubemap = this.engine.graphics_manager.shadow_map.point_shadow_framebuffer.textures["depth"] as CubeMapTexture;
-                this.engine.graphics_manager.set_uniform("depth_cubemap", depth_cubemap);
-            } else {
-                throw new Error(`A point shadow framebuffer is supplied, but there is no CUBEMAP_TEXTURE_DEPTH attachment named "depth". to use a point shadow framebuffer please supply a CUBEMAP_TEXTURE_DEPTH attachment named "depth".`);
-            }
-        }
-
         // pass the MVP matrix
         this.engine.graphics_manager.set_uniform("u_model", this.get_world_matrix());
 

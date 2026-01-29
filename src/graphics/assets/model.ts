@@ -20,11 +20,13 @@ export class Model {
 
 
     draw_start() {
-        this.material.draw_start();
+        if (!this.gm.engine.main_scene.rendering_depth_map)
+            this.material.draw_start();
     }
 
     draw_end() {
         this.mesh.draw();
-        this.material.draw_end();
+        if (!this.gm.engine.main_scene.rendering_depth_map)
+            this.material.draw_end();
     }
 }

@@ -21,6 +21,19 @@ async function startup(engine:Engine) {
         "/assets/models/MedievalAnchor/textures/AnchorHook_albedo.png"
     ]);
 
+    // 2D SHADER
+    const shader_prog_2d = gm.create_shader_program("2D");
+
+    shader_prog_2d.add_shader(gm.gl.VERTEX_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.vs"));
+    shader_prog_2d.add_shader(gm.gl.FRAGMENT_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.fs"));
+
+    shader_prog_2d.add_uniform("u_model", WebGLUniformType.F4M);
+    shader_prog_2d.add_uniform("u_projection", WebGLUniformType.F4M);
+
+    shader_prog_2d.add_uniform("sprite_texture", WebGLUniformType.TEXTURE_2D);
+
+    shader_prog_2d.build();
+
     // 3D SHADER
     const shader_prog_submerged = gm.create_shader_program("submerged");
 
@@ -139,13 +152,24 @@ async function startup(engine:Engine) {
     const point_light = new PointLight(engine, "point_light", new Vec3(1.0,1.0,1.0), 1.0, 1.0, 1.0, 10.0, 1000.0);
     
     const ocean_light = new DirectionalLight(engine, "ocean_light", new Vec3(0.0,0.0,1.0), 1.0, 1.0, 1.0, 7.0)
-    const sun_light = new DirectionalLight(engine, "sun_light", new Vec3(1.0,1.0,0.0), 1.0, 1.0, 1.0, 5.0)
+    const sun_light = new DirectionalLight(engine, "sun_light", new Vec3(1.0,1.0,0.0), 1.0, 1.0, 1.0, 1.0)
+    
+    const overlay = new Node(engine, "overlay")
 
+    
     engine.main_scene.root_node.push_child(pirate_ship);
     engine.main_scene.root_node.push_child(anchor);
     engine.main_scene.root_node.push_child(point_light);
     engine.main_scene.root_node.push_child(ocean_light);
     engine.main_scene.root_node.push_child(sun_light);
+    
+    const depth_texture = new Sprite2D(engine, "depth_texture", engine.main_scene.directional_lights[1].framebuffer.textures["depth"] as Texture, shader_prog_2d);
+    engine.main_scene.root_node.push_child(overlay);
+
+    overlay.push_child(depth_texture);
+
+    depth_texture.scale = new Vec2(500.0);
+    depth_texture.position = new Vec2(300, 300)
 
     ocean_light.rotation.rotateZ(-90 * (Math.PI / 180))
     sun_light.rotation.rotateZ(100 * (Math.PI / 180))

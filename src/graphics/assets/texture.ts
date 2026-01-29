@@ -6,8 +6,11 @@ const UNSIGNED_INT = 5125;
 
 export enum TextureType {
     COLOR,
-    DEPTH
+    DEPTH,
+    ARRAY
 }
+
+// TODO : ADD TEXTURE ARRAY TYPE
 
 export class Texture {
     gm:GraphicsManager;

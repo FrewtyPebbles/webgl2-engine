@@ -1,17 +1,19 @@
 export default `#version 300 es
-precision highp float;
-
-in vec3 v_normal;
-in vec2 v_uv;
-in vec3 v_frag_pos;
-
-
-out vec4 frag_color;
-
 #define N_POINT_LIGHTS 50
 #define N_SPOT_LIGHTS 50
 #define N_DIRECTIONAL_LIGHTS 10
 #define PI 3.14159265358979323846264338327950288419716939937510
+precision highp float;
+precision highp sampler2DArray;
+
+in vec3 v_normal;
+in vec2 v_uv;
+in vec3 v_frag_pos;
+in vec4 v_frag_pos_light_space[N_DIRECTIONAL_LIGHTS];
+
+
+out vec4 frag_color;
+
 
 struct Environment {
     vec3 ambient_light;
@@ -87,9 +89,10 @@ uniform Environment environment;
 
 uniform vec3 camera_position;
 
-uniform samplerCube depth_cubemap;
+uniform sampler2DArray directional_light_shadow_map;
 
 float L(PointLight light);
+float L(DirectionalLight light);
 
 float distribution_GGX(vec3 N, vec3 H, float a);
 float geometry_schlick_GGX(float NdotV, float k);
@@ -98,22 +101,76 @@ vec3 fresnel_schlick(float cosTheta, vec3 F0);
 
 vec3 Fr(vec3 light_dir, vec4 albedo_color);
 
+vec3 calculate_point_lighting(vec4 base_color);
+
+vec3 calculate_directional_lighting(vec4 base_color);
+
+vec3 calculate_lighting(vec4 base_color);
+
+float calculate_shadow(vec4 frag_pos_light_space);
+
 void main() {
     vec4 base_color = texture(material_texture_albedo, v_uv);
 
-    vec3 total_specular_diffuse = vec3(0.0,0.0,0.0);
+    vec3 lighting = calculate_lighting(base_color);
+
+    base_color.rgb = environment.ambient_light * base_color.rgb + lighting;
+
+    frag_color = base_color;
+}
+
+float calculate_shadow(int index) {
+    vec4 frag_pos_light_space = v_frag_pos_light_space[index];
+    vec3 proj_coords = frag_pos_light_space.xyz / frag_pos_light_space.w;
+    proj_coords = proj_coords * 0.5 + 0.5;
+
+    float closest_depth = texture(directional_light_shadow_map, vec3(proj_coords.xy, float(index))).z;
+    
+    float current_depth = proj_coords.z;
+    
+    float shadow = current_depth > closest_depth ? 1.0 : 0.0;
+
+    return shadow;
+}
+
+vec3 calculate_lighting(vec4 base_color) {
+    vec3 cumulative_radiance = vec3(0.0,0.0,0.0);
+
+    cumulative_radiance += calculate_point_lighting(base_color);
+
+    cumulative_radiance += calculate_directional_lighting(base_color);
+
+    return cumulative_radiance;
+}
+
+vec3 calculate_point_lighting(vec4 base_color) {
+    vec3 cumulative_radiance = vec3(0.0,0.0,0.0);
 
     for (int i = 0; i < point_lights_count; i++) {
         PointLight light = point_lights[i];
         vec3 light_dir = normalize(light.position - v_frag_pos);
         float n_dot_l = max(dot(v_normal, light_dir), 0.0);
         vec3 product = Fr(light_dir, base_color) * L(light) * n_dot_l;
-        total_specular_diffuse += product * light.color;
+        float shadow = calculate_shadow(i);
+        float visibility = 1.0 - shadow;
+        cumulative_radiance += product * light.color * visibility;
     }
 
-    base_color.rgb = environment.ambient_light * base_color.rgb + total_specular_diffuse;
+    return cumulative_radiance;
+}
 
-    frag_color = base_color;
+vec3 calculate_directional_lighting(vec4 base_color) {
+    vec3 cumulative_radiance = vec3(0.0,0.0,0.0);
+
+    for (int i = 0; i < directional_lights_count; i++) {
+        DirectionalLight light = directional_lights[i];
+        vec3 light_dir = (light.rotation * vec4(1.0,0.0,0.0, 0.0)).xyz;
+        float n_dot_l = max(dot(v_normal, light_dir), 0.0);
+        vec3 product = Fr(light_dir, base_color) * L(light) * n_dot_l;
+        cumulative_radiance += product * light.color;
+    }
+
+    return cumulative_radiance;
 }
 
 vec3 Fr(vec3 light_dir, vec4 albedo_color) {
@@ -148,6 +205,10 @@ float L(PointLight light) {
     // Standard ranged attenuation
     float attenuation = clamp(1.0 - light_distance / light.range, 0.0, 1.0);
     return light.energy * attenuation * attenuation;
+}
+
+float L(DirectionalLight light) {
+    return light.energy;
 }
 
 float distribution_GGX(vec3 N, vec3 H, float a)

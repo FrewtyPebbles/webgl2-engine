@@ -48,4 +48,6 @@ function on_update(node, engine, time, delta_time)
     node.rotation = Quat():mul(wobble_quat):mul(rotation_quat)
 
     gm:set_uniform("time", time)
+
+    print(node.position);
 end

@@ -14,6 +14,8 @@ export class Scene {
     directional_lights:DirectionalLight[] = [];
     spot_lights:SpotLight[] = [];
 
+    rendering_depth_map:boolean = false;
+
     on_scene_start_callback:(engine:Engine, scene:Scene) => Promise<void> = async(engine, scene) => {};
     on_scene_update_callback:(engine:Engine, scene:Scene, time:number, delta_time:number) => void = (engine, time, delta_time) => {};
 
