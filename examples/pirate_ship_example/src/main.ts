@@ -202,6 +202,6 @@ const canvas: HTMLCanvasElement = document.getElementById("render-canvas") as HT
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-var engine = new Engine(canvas, startup, update);
+var engine = new Engine(canvas, null, startup, update);
 
 engine.start();

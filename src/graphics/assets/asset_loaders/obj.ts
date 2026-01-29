@@ -1,9 +1,11 @@
 import { Vec3 } from "@vicimpa/glm";
-import { GraphicsManager } from "../graphics_manager.ts";
-import { Texture, TextureType } from "../assets/texture.ts";
-import { Model } from "../assets/model.ts";
-import { Mesh } from "../assets/mesh.ts";
-import { Material } from "../assets/material.ts";
+import { GraphicsManager } from "../../graphics_manager.ts";
+import { Texture, TextureType } from "../texture.ts";
+import { Model } from "../model.ts";
+import { Material } from "../material.ts";
+import { Mesh } from "../mesh.ts";
+
+
 
 interface OBJData {
     vertices: Float32Array;
@@ -124,7 +126,7 @@ export async function load_obj(gm:GraphicsManager, model_path:string, image_asse
 
     // Build the model
     var mesh = new Mesh(gm, obj.vertices, obj.normals, obj.uvs, obj.indices, obj.dimensions, obj.center);
-    var material = new Material(gm, image_assets[0], 0.0, 0.0, 0.0, null, gm.default_3d_shader_program);
+    var material = new Material(gm, "default", image_assets[0], 0.0, 0.0, 0.0, null, gm.default_3d_shader_program);
     var model = new Model(gm, mesh, material);
 
     return model;

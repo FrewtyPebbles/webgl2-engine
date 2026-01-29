@@ -1,4 +1,4 @@
-export * from "./graphics/asset_loaders/obj.ts";
+export * from "./graphics/assets/asset_loaders/obj.ts";
 export * from "./graphics/assets/vaos.ts";
 export * from "./graphics/assets/material.ts";
 export * from "./graphics/assets/mesh.ts";

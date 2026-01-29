@@ -5,6 +5,7 @@ import { InputManager } from "./input/input_manager.ts";
 import Utility from "./utility.ts";
 import { DirectionalLight, Light, PointLight, SpotLight } from "./node/lights.ts";
 import { HookManager } from "./hook_manager.ts";
+import { Scene } from "./scene.ts";
 
 
 export default class Engine {
@@ -13,6 +14,8 @@ export default class Engine {
     input_manager:InputManager;
     hook_manager:HookManager;
 
+    main_scene:Scene;
+
     // This keeps track of all lights in the scene tree,
     // makes it more efficient to render all the lights.
     point_lights:PointLight[] = [];
@@ -20,7 +23,7 @@ export default class Engine {
     spot_lights:SpotLight[] = [];
     
     // EVENT CALLBACKS
-    on_global_startup_callback:(engine:Engine) => Promise<void>;
+    on_global_start_callback:(engine:Engine) => Promise<void>;
     on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void;
 
     UTIL = Utility;
@@ -31,15 +34,17 @@ export default class Engine {
 
     constructor(
         canvas:HTMLCanvasElement,
-        on_global_startup_callback:(engine:Engine) => Promise<void> = async(engine) => {},
+        main_scene:Scene | null = null,
+        on_global_start_callback:(engine:Engine) => Promise<void> = async(engine) => {},
         on_global_update_callback:(engine:Engine, time:number, delta_time:number) => void = (engine, time, delta_time) => {},
     ) {
         this.canvas = canvas;
         this.graphics_manager = new GraphicsManager(this, this.canvas);
         this.input_manager = new InputManager(this);
         this.hook_manager = new HookManager(this);
-        this.on_global_startup_callback = on_global_startup_callback;
+        this.on_global_start_callback = on_global_start_callback;
         this.on_global_update_callback = on_global_update_callback;
+        this.main_scene = main_scene ? main_scene : new Scene(this, "main_scene");
     }
 
     get_node(name:string):Node|null {
@@ -63,7 +68,7 @@ export default class Engine {
     }
 
     async start() {
-        await this.on_global_startup_callback(this);
+        await this.on_global_start_callback(this);
         this.graphics_manager.render((_, time, delta_time) => {
             this.on_global_update_callback(this, time, delta_time);
             this.input_manager.update();

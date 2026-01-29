@@ -12,6 +12,7 @@ export interface MaterialOptionsObject {
 
 export class Material {
     gm:GraphicsManager;
+    name:string;
     shader_program:ShaderProgram|null;
     albedo:Vec3|Texture;
     metalic:number|Texture;
@@ -27,6 +28,7 @@ export class Material {
 
     constructor(
         gm:GraphicsManager,
+        name:string,
         albedo:Vec3|Texture,
         metalic:number|Texture,
         roughness:number|Texture,
@@ -36,6 +38,7 @@ export class Material {
         options:MaterialOptionsObject = {},
     ) {
         this.gm = gm;
+        this.name = name;
         this.albedo = albedo;
         this.metalic = metalic;
         this.roughness = roughness;
