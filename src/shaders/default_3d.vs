@@ -1,7 +1,10 @@
 #version 300 es
-#define N_DIRECTIONAL_LIGHTS 10
 precision highp float;
+precision highp sampler2DArrayShadow;
 
+uniform mediump int directional_lights_count;
+
+#define N_DIRECTIONAL_LIGHTS 10
 
 // Vertex position attribute
 layout(location = 0) in vec3 a_position;
@@ -19,7 +22,6 @@ uniform mat4 u_model;
 uniform mat4 u_view;
 uniform mat4 u_projection;
 uniform mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
-uniform int directional_lights_count;
 
 
 void main() {

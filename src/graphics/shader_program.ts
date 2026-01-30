@@ -5,6 +5,9 @@ export type WebGLShaderType = number;
 
 export enum WebGLUniformType {
     TEXTURE_2D,
+    TEXTURE_2D_ARRAY,
+    SHADOW_2D,
+    SHADOW_2D_ARRAY,
     TEXTURE_CUBE_MAP,
     STRUCT,
     F,
@@ -60,14 +63,20 @@ export class ShaderProgram {
             type:uniform_type,
         }
 
-        if (uniform_type === WebGLUniformType.TEXTURE_2D || uniform_type === WebGLUniformType.TEXTURE_CUBE_MAP) {
+        if ([
+            WebGLUniformType.TEXTURE_2D,
+            WebGLUniformType.TEXTURE_2D_ARRAY,
+            WebGLUniformType.TEXTURE_CUBE_MAP,
+            WebGLUniformType.SHADOW_2D,
+            WebGLUniformType.SHADOW_2D_ARRAY,
+        ].includes(uniform_type)) {
             this.uniforms[label].texture_unit = this.texture_counter;
             this.texture_counter += 1;
         }
     }
 
     build() {
-        this.webgl_shader_program = this.gl.createProgram()!;
+        this.webgl_shader_program = this.gl.createProgram();
         
         for (let shader of this.shaders) {
             this.gl.attachShader(this.webgl_shader_program, shader);

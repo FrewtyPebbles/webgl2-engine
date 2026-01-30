@@ -52,7 +52,7 @@ export class Material {
                 this.shader_program = gm.shader_programs[shader_program];
             }
         } else {
-            this.shader_program = null;
+            this.shader_program = this.gm.create_default_3d_shader_program();
         }
 
         // OPTIONS
@@ -108,7 +108,7 @@ export class Material {
         }
     }
 
-    draw_start() {
+    draw_start(set_uniforms:boolean = true) {
         if (!this.shader_program)
             throw Error(`Shader program not set for model.`);
 
@@ -126,7 +126,8 @@ export class Material {
 
         this.shader_program.use();
 
-        this.set_uniforms();
+        if (set_uniforms)
+            this.set_uniforms();
     }
 
     draw_end() {

@@ -22,23 +22,22 @@ export function get_skybox_vao(gm:GraphicsManager):VAOInfo {
     
     const cube_vertices = new Float32Array([
         -1, -1, -1, // 0
-        1, -1, -1, // 1
-        1,  1, -1, // 2
+         1, -1, -1, // 1
+         1,  1, -1, // 2
         -1,  1, -1, // 3
         -1, -1,  1, // 4
-        1, -1,  1, // 5
-        1,  1,  1, // 6
+         1, -1,  1, // 5
+         1,  1,  1, // 6
         -1,  1,  1  // 7
     ]);
 
-    // Indices for 12 triangles (36 elements)
     const cube_indices = new Uint16Array([
-        0,1,2, 2,3,0,   // -Z
-        4,5,6, 6,7,4,   // +Z
-        0,4,7, 7,3,0,   // -X
-        1,5,6, 6,2,1,   // +X
-        3,2,6, 6,7,3,   // +Y
-        0,1,5, 5,4,0    // -Y
+        0,1,2, 2,3,0, // -Z
+        4,5,6, 6,7,4, // +Z
+        0,4,7, 7,3,0, // -X
+        1,5,6, 6,2,1, // +X
+        3,2,6, 6,7,3, // +Y
+        0,1,5, 5,4,0  // -Y
     ]);
 
     skybox_VAO_vertex_count = cube_vertices.length;
@@ -62,7 +61,7 @@ export function get_skybox_vao(gm:GraphicsManager):VAOInfo {
     gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, ibo);
     gm.gl.bufferData(gm.gl.ELEMENT_ARRAY_BUFFER, cube_indices, gm.gl.STATIC_DRAW);
 
-    // Unbind VAO (good practice)
+    // Unbind VAO
     gm.gl.bindVertexArray(null);
     gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, null);
 
@@ -74,15 +73,15 @@ export function get_sprite_vao(gm:GraphicsManager):VAOInfo {
         return {vao:sprite_VAO, index_count:sprite_VAO_index_count, vertex_count:sprite_VAO_vertex_count};
     
     const quad_vertices = new Float32Array([
-        -0.5, -0.5, 0.0,         0.0, 0.0,  // Bottom-left
-         0.5, -0.5, 0.0,         1.0, 0.0,  // Bottom-right
-         0.5,  0.5, 0.0,         1.0, 1.0,  // Top-right
-        -0.5,  0.5, 0.0,         0.0, 1.0   // Top-left
+        -0.5, -0.5, 0.0,         0.0, 0.0,  // bottom left
+         0.5, -0.5, 0.0,         1.0, 0.0,  // bottom right
+         0.5,  0.5, 0.0,         1.0, 1.0,  // top right
+        -0.5,  0.5, 0.0,         0.0, 1.0   // top left
     ]);
 
     const quad_indices = new Uint16Array([
-        0, 1, 2,  // First triangle
-        2, 3, 0   // Second triangle
+        0, 1, 2, // First triangle
+        2, 3, 0  // Second triangle
     ]);
 
     sprite_VAO_vertex_count = quad_vertices.length / 5;
@@ -92,7 +91,7 @@ export function get_sprite_vao(gm:GraphicsManager):VAOInfo {
     sprite_VAO = gm.gl.createVertexArray();
     gm.gl.bindVertexArray(sprite_VAO);
 
-    // Create and bind VBO (Vertex Buffer Object)
+    // Create and bind VBO
     const vbo = gm.gl.createBuffer();
     gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, vbo);
     gm.gl.bufferData(gm.gl.ARRAY_BUFFER, quad_vertices, gm.gl.STATIC_DRAW);
@@ -103,31 +102,31 @@ export function get_sprite_vao(gm:GraphicsManager):VAOInfo {
     // Position attribute (location 0)
     gm.gl.enableVertexAttribArray(0);
     gm.gl.vertexAttribPointer(
-        0,                              // attribute location
-        3,                              // number of components (x, y, z)
-        gm.gl.FLOAT,                       // data type
-        false,                          // normalize
-        stride,                         // stride (bytes between vertices)
-        0                               // offset
+        0, // attribute location
+        3, // number of components (x, y, z)
+        gm.gl.FLOAT, // data type
+        false, // normalize
+        stride, // stride
+        0 // offset
     );
 
     // TexCoord attribute (location 1)
     gm.gl.enableVertexAttribArray(1);
     gm.gl.vertexAttribPointer(
-        1,                              // attribute location
-        2,                              // number of components (u, v)
-        gm.gl.FLOAT,                       // data type
-        false,                          // normalize
-        stride,                         // stride
-        3 * Float32Array.BYTES_PER_ELEMENT  // offset (skip x, y, z)
+        1, // attribute location
+        2, // number of components (u, v)
+        gm.gl.FLOAT, // data type
+        false, // normalize
+        stride, // stride
+        3 * Float32Array.BYTES_PER_ELEMENT // offset (skip x, y, z)
     );
 
-    // Create and bind EBO (Element Buffer Object)
+    // Create and bind EBO
     const ebo = gm.gl.createBuffer();
     gm.gl.bindBuffer(gm.gl.ELEMENT_ARRAY_BUFFER, ebo);
     gm.gl.bufferData(gm.gl.ELEMENT_ARRAY_BUFFER, quad_indices, gm.gl.STATIC_DRAW);
 
-    // Unbind VAO (good practice)
+    // Unbind VAO
     gm.gl.bindVertexArray(null);
     gm.gl.bindBuffer(gm.gl.ARRAY_BUFFER, null);
 

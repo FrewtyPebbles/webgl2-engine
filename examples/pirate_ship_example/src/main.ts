@@ -21,18 +21,22 @@ async function startup(engine:Engine) {
         "/assets/models/MedievalAnchor/textures/AnchorHook_albedo.png"
     ]);
 
+    const cube_model_promise = load_obj(gm, "/assets/models/cube/source/Cube.obj", [
+        "/assets/models/cube/textures/goblin.jpeg"
+    ]);
+
     // 2D SHADER
-    const shader_prog_2d = gm.create_shader_program("2D");
+    const shader_prog_shadow_debug = gm.create_shader_program("2D");
 
-    shader_prog_2d.add_shader(gm.gl.VERTEX_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.vs"));
-    shader_prog_2d.add_shader(gm.gl.FRAGMENT_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.fs"));
+    shader_prog_shadow_debug.add_shader(gm.gl.VERTEX_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.vs"));
+    shader_prog_shadow_debug.add_shader(gm.gl.FRAGMENT_SHADER, await engine.UTIL.load_text_file("/assets/depthmap.fs"));
 
-    shader_prog_2d.add_uniform("u_model", WebGLUniformType.F4M);
-    shader_prog_2d.add_uniform("u_projection", WebGLUniformType.F4M);
+    shader_prog_shadow_debug.add_uniform("u_model", WebGLUniformType.F4M);
+    shader_prog_shadow_debug.add_uniform("u_projection", WebGLUniformType.F4M);
 
-    shader_prog_2d.add_uniform("sprite_texture", WebGLUniformType.TEXTURE_2D);
+    shader_prog_shadow_debug.add_uniform("sprite_texture", WebGLUniformType.TEXTURE_2D_ARRAY);
 
-    shader_prog_2d.build();
+    shader_prog_shadow_debug.build();
 
     // 3D SHADER
     const shader_prog_submerged = gm.create_shader_program("submerged");
@@ -107,6 +111,11 @@ async function startup(engine:Engine) {
     shader_prog_submerged.add_uniform("material_texture_roughness", WebGLUniformType.TEXTURE_2D);
     shader_prog_submerged.add_uniform("material_texture_ao", WebGLUniformType.TEXTURE_2D);
 
+    // shadows
+    shader_prog_submerged.add_uniform("u_directional_light_space_matrix[]", WebGLUniformType.F4M);
+    shader_prog_submerged.add_uniform("directional_light_shadow_map", WebGLUniformType.SHADOW_2D_ARRAY);
+    shader_prog_submerged.add_uniform("shadow_map_size", WebGLUniformType.F2V)
+
     shader_prog_submerged.build()
 
     const skybox_texture = new CubeMapTexture(gm,
@@ -145,6 +154,18 @@ async function startup(engine:Engine) {
     anchor.model.material.blend_function = {sfactor:gm.gl.SRC_ALPHA, dfactor:gm.gl.ONE_MINUS_SRC_ALPHA};
     anchor.model.material.set_shader_program(shader_prog_submerged);
 
+    const cube_model = await cube_model_promise;
+
+    if (!cube_model)
+        throw new Error("Failed to load cube model.")
+
+    const cube = new Object3D(engine, "cube", cube_model);
+
+    cube.model.material.roughness = 1.0
+    cube.model.material.metalic = 0.0
+    cube.model.material.blend_function = {sfactor:gm.gl.SRC_ALPHA, dfactor:gm.gl.ONE_MINUS_SRC_ALPHA};
+    anchor.model.material.set_shader_program(shader_prog_submerged);
+
     await anchor.set_lua_file("/assets/src/anchor.lua");
 
     await pirate_ship.set_lua_file("/assets/src/pirate_ship.lua");
@@ -159,22 +180,24 @@ async function startup(engine:Engine) {
     
     engine.main_scene.root_node.push_child(pirate_ship);
     engine.main_scene.root_node.push_child(anchor);
-    engine.main_scene.root_node.push_child(point_light);
-    engine.main_scene.root_node.push_child(ocean_light);
+    // engine.main_scene.root_node.push_child(point_light);
+    // engine.main_scene.root_node.pushdds_child(cube);
     engine.main_scene.root_node.push_child(sun_light);
+    engine.main_scene.root_node.push_child(ocean_light);
     
-    const depth_texture = new Sprite2D(engine, "depth_texture", engine.main_scene.directional_lights[1].framebuffer.textures["depth"] as Texture, shader_prog_2d);
+    // const depth_texture = new Sprite2D(engine, "depth_texture", engine.main_scene.directional_light_shadow_map_texture, shader_prog_shadow_debug);
     engine.main_scene.root_node.push_child(overlay);
 
-    overlay.push_child(depth_texture);
+    // overlay.push_child(depth_texture);
 
-    depth_texture.scale = new Vec2(500.0);
-    depth_texture.position = new Vec2(300, 300)
+    cube.position = new Vec3(0,-100,0)
+    cube.scale = new Vec3(100, 30.0, 100);
+    // depth_texture.position = new Vec2(300, 300)
 
-    ocean_light.rotation.rotateZ(-90 * (Math.PI / 180))
+    ocean_light.rotation.rotateZ(270 * (Math.PI / 180))
     sun_light.rotation.rotateZ(100 * (Math.PI / 180))
 
-    point_light.position = new Vec3(0, 100, 0)
+    point_light.position = new Vec3(0, 50, 0)
     
     anchor.position = new Vec3(0,130,0);
     anchor.rotation.rotateX(-Math.PI/8);

@@ -41,6 +41,8 @@ export class Node {
     }
 
     protected on_update(node:this, engine:Engine, time:number, delta_time:number) {
+        if (this.engine.main_scene.rendering_depth_map)
+            return;
         this.on_update_callback(node, engine, time, delta_time);
         if (this.lua_url !== null)
             this.engine.hook_manager.call_on_update_callback(this.lua_url, node, engine, time, delta_time);

@@ -1,4 +1,4 @@
-import { Mat4, Vec4 } from "@vicimpa/glm";
+import { Mat4, Vec2, Vec4 } from "@vicimpa/glm";
 import Engine from "../engine.ts";
 import { Node3D } from "../node.ts";
 import { Skybox } from "./skybox.ts";
@@ -14,9 +14,21 @@ export class Object3D extends Node3D {
     }
     
     render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        var index = 0;
+        
         this.model.draw_start();
-
+        
         this.on_update(this, this.engine, time, delta_time);
+
+        // DRAW SHADOWS
+        index = 0;
+        for (const light of this.engine.main_scene.directional_lights) {
+            light.draw_shadow_map(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+            index++;
+        }
+
+        // CONTINUE DRAWING MATERIAL (without setting uniforms again)
+        this.model.draw_start();
 
         const skybox = this.get_parent_of_type(Skybox);
         if (skybox)
@@ -30,7 +42,6 @@ export class Object3D extends Node3D {
         }
 
         // PASS IN LIGHTS
-        var index = 0;
 
         var mesh_size = this.model.mesh.dimensions.clone().mul(this.scale).length();
 
@@ -43,6 +54,7 @@ export class Object3D extends Node3D {
                 index++;
             }
         }
+
         if (index)
             this.engine.graphics_manager.set_uniform("point_lights_count", index);
         
@@ -51,6 +63,7 @@ export class Object3D extends Node3D {
             light.set_uniforms("spot_lights", index);
             index++;
         }
+        
         if (index)
             this.engine.graphics_manager.set_uniform("spot_lights_count", index);
         
@@ -59,8 +72,13 @@ export class Object3D extends Node3D {
             light.set_uniforms("directional_lights", index);
             index++;
         }
+
         if (index)
             this.engine.graphics_manager.set_uniform("directional_lights_count", index);
+
+        //PASS SHADOW MAPS
+        this.engine.graphics_manager.set_uniform("directional_light_shadow_map", this.engine.main_scene.directional_light_shadow_map_texture)
+        this.engine.graphics_manager.set_uniform("shadow_map_size", new Vec2(this.engine.main_scene.shadow_resolution))
 
         // pass the MVP matrix
         this.engine.graphics_manager.set_uniform("u_model", this.get_world_matrix());

@@ -1,17 +1,24 @@
 #version 300 es
 precision highp float;
+precision highp sampler2DArrayShadow;
 
-in vec3 v_normal;
-in vec2 v_uv;
-in vec3 v_frag_pos;
-
-
-out vec4 frag_color;
+uniform mediump int directional_lights_count;
+uniform mediump int spot_lights_count;
+uniform mediump int point_lights_count;
 
 #define N_POINT_LIGHTS 50
 #define N_SPOT_LIGHTS 50
 #define N_DIRECTIONAL_LIGHTS 10
 #define PI 3.14159265358979323846264338327950288419716939937510
+
+in vec3 v_normal;
+in vec2 v_uv;
+in vec3 v_frag_pos;
+in vec4 v_frag_pos_light_space[N_DIRECTIONAL_LIGHTS];
+
+
+out vec4 frag_color;
+
 
 struct Environment {
     vec3 ambient_light;
@@ -73,13 +80,10 @@ struct DirectionalLight {
 };
 
 uniform PointLight point_lights[N_POINT_LIGHTS];
-uniform int point_lights_count;
 
 uniform SpotLight spot_lights[N_SPOT_LIGHTS];
-uniform int spot_lights_count;
 
 uniform DirectionalLight directional_lights[N_DIRECTIONAL_LIGHTS];
-uniform int directional_lights_count;
 
 uniform Material material;
 
@@ -87,9 +91,9 @@ uniform Environment environment;
 
 uniform vec3 camera_position;
 
-uniform samplerCube depth_cubemap;
+uniform sampler2DArrayShadow directional_light_shadow_map;
 
-uniform float time;
+uniform vec2 shadow_map_size;
 
 float L(PointLight light);
 float L(DirectionalLight light);
@@ -107,6 +111,10 @@ vec3 calculate_directional_lighting(vec4 base_color);
 
 vec3 calculate_lighting(vec4 base_color);
 
+float calculate_shadow(int index, vec3 light_dir);
+
+uniform float time;
+
 vec4 waves(vec4 base_color, float height);
 
 void main() {
@@ -117,8 +125,37 @@ void main() {
     base_color.rgb = environment.ambient_light * base_color.rgb + lighting;
 
     base_color = waves(base_color, 30.0);
-
+    
     frag_color = base_color;
+}
+
+float calculate_shadow(int index, vec3 light_dir) {
+    vec4 frag_pos_light_space = v_frag_pos_light_space[index];
+    vec3 proj_coords = frag_pos_light_space.xyz / frag_pos_light_space.w;
+    proj_coords = proj_coords * 0.5 + 0.5;
+
+    float bias = max(0.05 * (1.0 - dot(v_normal, light_dir)), 0.005);;  // tune this!
+
+    float current_depth = proj_coords.z - bias;
+
+    // apply blur to shadow edges
+    float shadow = 0.0;
+
+    vec2 texel_size = 1.0 / shadow_map_size;
+    for(int x = -1; x <= 1; ++x)
+    {
+        for(int y = -1; y <= 1; ++y)
+        {
+            vec4 texture_lookup = vec4(
+                proj_coords.xy + vec2(x, y) * texel_size, 
+                float(index), 
+                current_depth
+            );
+            shadow += texture(directional_light_shadow_map, texture_lookup);
+        }
+    }
+
+    return shadow / 9.0;
 }
 
 vec3 calculate_lighting(vec4 base_color) {
@@ -153,7 +190,9 @@ vec3 calculate_directional_lighting(vec4 base_color) {
         vec3 light_dir = (light.rotation * vec4(1.0,0.0,0.0, 0.0)).xyz;
         float n_dot_l = max(dot(v_normal, light_dir), 0.0);
         vec3 product = Fr(light_dir, base_color) * L(light) * n_dot_l;
-        cumulative_radiance += product * light.color;
+        float shadow = calculate_shadow(i, light_dir);
+        float visibility = shadow;
+        cumulative_radiance += product * light.color * visibility;
     }
 
     return cumulative_radiance;
@@ -233,6 +272,8 @@ vec3 fresnel_schlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
+
+
 
 vec4 waves(vec4 base_color, float height) {
     float wave = height + sin((time * 0.025 + v_frag_pos.x) * 0.25);

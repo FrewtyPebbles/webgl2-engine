@@ -108,7 +108,7 @@ export async function load_obj(gm:GraphicsManager, model_path:string, image_asse
         const res = await fetch(image_asset_path);
         if (res.ok) {
             const blob = await res.blob();
-            image_assets.push(new Texture(gm, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {}));
+            image_assets.push(new Texture(gm, image_asset_path, await createImageBitmap(blob, { imageOrientation: 'flipY' }), TextureType.COLOR, {}));
         } else {
             throw new Error(`The .obj image asset file at "${image_asset_path}" does not exist.`);
         }

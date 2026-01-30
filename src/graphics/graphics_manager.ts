@@ -177,16 +177,28 @@ export class GraphicsManager {
                     console.warn(`Uniform "${label}" not in use in shader program "${this.shader_program.name}".`)
             }
             this.shader_program.uniform_locs[label] = loc;
-        }
-        
+        }        
         switch (uniform.type) {
             case WebGLUniformType.TEXTURE_2D:
+            case WebGLUniformType.SHADOW_2D:
+                // console.log("TU TEXTURE_2D | SHADOW_2D", uniform.texture_unit);
+
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
                 this.gl.bindTexture(this.gl.TEXTURE_2D, (value as Texture).webgl_texture);
                 this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit!);
                 break;
+            case WebGLUniformType.TEXTURE_2D_ARRAY:
+            case WebGLUniformType.SHADOW_2D_ARRAY:
+                // console.log("TU TEXTURE_2D_ARRAY | SHADOW_2D_ARRAY", uniform.texture_unit);
+
+                this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
+                this.gl.bindTexture(this.gl.TEXTURE_2D_ARRAY, (value as Texture).webgl_texture);
+                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit!);
+                break;
 
             case WebGLUniformType.TEXTURE_CUBE_MAP:
+                // console.log("TU TEXTURE_CUBE_MAP", uniform.texture_unit);
+
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit!);
                 this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, (value as CubeMapTexture).webgl_texture);
                 this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit!);
@@ -265,7 +277,7 @@ export class GraphicsManager {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
         // Render node heirarchy.
-        const ortho_projection = (new Mat4()).orthoZO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
+        const ortho_projection = (new Mat4()).orthoNO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
         if (this.engine.main_scene.main_camera_3d) {
             this.engine.main_scene.render(
                 this.engine.main_scene.main_camera_3d.get_view_matrix(),
@@ -372,7 +384,8 @@ export class GraphicsManager {
         
         // shadows
         shader_prog_3d.add_uniform("u_directional_light_space_matrix[]", WebGLUniformType.F4M);
-        shader_prog_3d.add_uniform("directional_light_shadow_map[]", WebGLUniformType.TEXTURE_2D);
+        shader_prog_3d.add_uniform("directional_light_shadow_map", WebGLUniformType.SHADOW_2D_ARRAY);
+        shader_prog_3d.add_uniform("shadow_map_size", WebGLUniformType.F2V)
 
         shader_prog_3d.build();
 
