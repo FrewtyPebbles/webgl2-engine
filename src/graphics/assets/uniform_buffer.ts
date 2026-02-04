@@ -29,6 +29,7 @@ export function UniformBufferObjectMixin<TBase extends UBOBaseConstructor>(
 ) {
     class UniformBufferObjectMixin extends (Base as UBOBaseConstructorUNION) {
         static shader_programs:ShaderProgram[] = []
+        static UBO_dirty:boolean = false;
         constructor(...args:any[]) {
             super(...args);
             for (const parameter of parameter_mapping) {
@@ -60,33 +61,44 @@ export function UniformBufferObjectMixin<TBase extends UBOBaseConstructor>(
         }
 
         _on_property_change(prop: string, value: any):boolean {
-            var gm:GraphicsManager|null = null;
-            if ("engine" in this) {
-                gm = this.engine!.graphics_manager;
-            } else if ("gm" in this) {
-                gm = this.gm!;
-            } else if ("graphics_manager" in this) {
-                gm = this.graphics_manager!;
-            }
-            
-            if (gm === null) {
-                console.error(`Couldn't find graphics manager when the property named "${prop}" changed of the UBO at location "${location}".`);
-                return true;
-            }
-            const data = GraphicsManager.flatten_uniform_array_value(value);
+            UniformBufferObjectMixin.UBO_dirty = true;
 
-            for (const shader_program of UniformBufferObjectMixin.shader_programs) {
-                gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, shader_program.ubos[location].webgl_buffer);
-                gm.gl.bufferSubData(
-                    gm.gl.UNIFORM_BUFFER,
-                    shader_program.ubos[location][prop].offset,
-                    data,
-                    0
-                );
+            if (auto_send_buffer_data) {
+                let gm:GraphicsManager|null = null;
+                if ("engine" in this) {
+                    gm = this.engine!.graphics_manager;
+                } else if ("gm" in this) {
+                    gm = this.gm!;
+                } else if ("graphics_manager" in this) {
+                    gm = this.graphics_manager!;
+                }
+                
+                if (gm === null) {
+                    console.error(`Couldn't find graphics manager when the property named "${prop}" changed of the UBO at location "${location}".`);
+                    return true;
+                }
+                const data = GraphicsManager.flatten_uniform_array_value(value);
+    
+                for (const shader_program of UniformBufferObjectMixin.shader_programs) {
+                    gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, shader_program.ubos[location].webgl_buffer);
+                    gm.gl.bufferSubData(
+                        gm.gl.UNIFORM_BUFFER,
+                        shader_program.ubos[location][prop].offset,
+                        data,
+                        0
+                    );
+                }
+                gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, null);
             }
-            gm.gl.bindBuffer(gm.gl.UNIFORM_BUFFER, null);
 
             return true;
+        }
+
+        send_UBO() {
+            // TODO
+
+            // After sending set this flag
+            UniformBufferObjectMixin.UBO_dirty = false;
         }
 
         check_UBO():boolean {
