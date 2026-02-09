@@ -110,7 +110,6 @@ export class PointLight extends Light {
                         
             this.framebuffer.use();
             
-            this.engine.graphics_manager.gl.cullFace(this.engine.graphics_manager.gl.FRONT);
             this.engine.graphics_manager.set_uniform(`origin`, this.get_world_position());
             this.engine.graphics_manager.set_uniform(`range`, this.range);
             
@@ -133,8 +132,6 @@ export class PointLight extends Light {
                 
             }
             
-            this.engine.graphics_manager.gl.cullFace(this.engine.graphics_manager.gl.BACK);
-
             this.engine.graphics_manager.unuse_framebuffer();
             
             this.engine.graphics_manager.clear_shader();
@@ -169,25 +166,4 @@ export class PointLight extends Light {
         }
         this.engine.graphics_manager.resize_directional_shadow_map();
     }
-}
-
-
-// This cubemap is for mapping sampler2DArrayShadows to cubemap faces
-
-const FACE_MAPPING:[Float32Array, Float32Array, Float32Array, Float32Array, Float32Array, Float32Array] = [
-    new Float32Array([1.0, 0.0, 0.0, 1.0]),
-    new Float32Array([1.0, 0.0, 0.0, 0.0]),
-    new Float32Array([0.0, 1.0, 0.0, 1.0]),
-    new Float32Array([0.0, 1.0, 0.0, 0.0]),
-    new Float32Array([0.0, 0.0, 1.0, 1.0]),
-    new Float32Array([0.0, 0.0, 1.0, 0.0])
-];
-
-var FACE_CUBE_MAP:CubeMapTexture|null = null;
-
-export function get_face_cube_map_texture(gm:GraphicsManager) {
-    if (FACE_CUBE_MAP)
-        return FACE_CUBE_MAP;
-    FACE_CUBE_MAP = new CubeMapTexture(gm, "FACE_MAPPING", TextureType.COLOR_ARRAY, ...FACE_MAPPING, {}, 0, gm.gl.FLOAT)
-    return FACE_CUBE_MAP;
 }

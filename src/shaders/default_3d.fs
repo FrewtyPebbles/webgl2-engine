@@ -1,7 +1,6 @@
 #version 300 es
-precision highp float;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DArray;
+precision lowp float;
+precision lowp sampler2DArrayShadow;
 
 uniform mediump int directional_lights_count;
 uniform mediump int point_lights_count;
@@ -91,11 +90,9 @@ uniform Environment environment;
 uniform vec3 camera_position;
 
 uniform sampler2DArrayShadow directional_light_shadow_maps;
-uniform sampler2DArray point_light_shadow_maps;
+uniform sampler2DArrayShadow point_light_shadow_maps;
 
 uniform vec2 shadow_map_size;
-
-uniform samplerCube face_selector;
 
 uniform mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
 uniform mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
@@ -167,15 +164,15 @@ float calculate_point_shadow(int index, PointLight light) {
     float current_depth = light_distance / light.range;
 
     float shadow = 0.0;
-    float sample_scale = 10.0;
-    vec2 texel_size = 1.0 / shadow_map_size;
-    for(int x = -1; x <= 1; ++x) {
-        for(int y = -1; y <= 1; ++y) {
-            float d = texture(point_light_shadow_maps, vec3(proj.xy + vec2(x, y) * sample_scale * texel_size, float(face_index))).r;
-            shadow += (current_depth - bias > d) ? 0.0 : 1.0;
-        }
-    }
-    shadow /= 9.0;
+
+    shadow += texture(
+        point_light_shadow_maps,
+        vec4(
+            proj.xy,
+            float(face_index),
+            current_depth - bias
+        )
+    );
 
     return shadow;
 }
@@ -207,19 +204,13 @@ float calculate_directional_shadow(int index, vec3 light_dir) {
     // apply blur to shadow edges
     float shadow = 0.0;
 
-    vec2 texel_size = 1.0 / shadow_map_size;
-    for(int x = -1; x <= 1; ++x) {
-        for(int y = -1; y <= 1; ++y) {
-            vec4 texture_lookup = vec4(
-                proj_coords.xy + vec2(x, y) * texel_size, 
-                float(index), 
-                current_depth
-            );
-            shadow += texture(directional_light_shadow_maps, texture_lookup);
-        }
-    }
+    shadow += texture(directional_light_shadow_maps, vec4(
+        proj_coords.xy, 
+        float(index), 
+        current_depth
+    ));
 
-    return shadow / 9.0;
+    return shadow;
 }
 
 vec3 calculate_lighting(vec4 base_color) {

@@ -1,5 +1,5 @@
 export default `#version 300 es
-precision highp float;
+precision lowp float;
 
 in vec2 v_uv;
 

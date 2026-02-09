@@ -3,7 +3,7 @@ import { Node3D, Node } from '../node.ts';
 import Engine from '../engine.ts';
 import { get_uniform_label_index, normalize_uniform_label } from './utility.ts';
 import { ShaderProgram, WebGLUniformType } from './shader_program.ts';
-import { AttachmentInfo, AttachmentType, Framebuffer } from './framebuffer.ts';
+import { AttachmentInfo, AttachmentType, DrawBitFlags, DrawFlag, Framebuffer, has_flag } from './framebuffer.ts';
 import { CubeMapTexture, Texture, TextureType } from './assets/texture.ts';
 
 import DEFAULT_2D_VERTEX_SHADER from '../shaders/default_2d.vs.ts';
@@ -20,7 +20,7 @@ import DEFAULT_DIRECTIONAL_SHADOW_FRAGMENT_SHADER from "../shaders/default_direc
 
 import DEFAULT_POINT_SHADOW_VERTEX_SHADER from "../shaders/default_point_shadow.vs.ts";
 import DEFAULT_POINT_SHADOW_FRAGMENT_SHADER from "../shaders/default_point_shadow.fs.ts";
-import { get_face_cube_map_texture, PointLight } from '../node/lights/point_light.ts';
+import { PointLight } from '../node/lights/point_light.ts';
 import { DirectionalLight } from '../node/lights/directional_light.ts';
 import { SpotLight } from '../node/lights/spot_light.ts';
 
@@ -87,10 +87,10 @@ export class GraphicsManager {
             {
                 [this.gl.TEXTURE_COMPARE_MODE]: this.gl.COMPARE_REF_TO_TEXTURE,
                 [this.gl.TEXTURE_COMPARE_FUNC]: this.gl.LEQUAL,
-                [this.gl.TEXTURE_MIN_FILTER]: this.gl.NEAREST,
-                [this.gl.TEXTURE_MAG_FILTER]: this.gl.NEAREST,
-                [this.gl.TEXTURE_WRAP_S]: this.gl.REPEAT,
-                [this.gl.TEXTURE_WRAP_T]: this.gl.REPEAT,
+                [this.gl.TEXTURE_MIN_FILTER]: this.gl.LINEAR,
+                [this.gl.TEXTURE_MAG_FILTER]: this.gl.LINEAR,
+                [this.gl.TEXTURE_WRAP_S]: this.gl.CLAMP_TO_EDGE,
+                [this.gl.TEXTURE_WRAP_T]: this.gl.CLAMP_TO_EDGE,
                 [this.gl.TEXTURE_BASE_LEVEL]: 0,
                 [this.gl.TEXTURE_MAX_LEVEL]: 0,
             }
@@ -102,14 +102,14 @@ export class GraphicsManager {
             Math.max(1, this.point_lights.length) * 6,
             this.shadow_resolution/6,
             this.shadow_resolution/6,
-            TextureType.COLOR_ARRAY,
+            TextureType.DEPTH_ARRAY,
             {
                 [this.gl.TEXTURE_COMPARE_MODE]: this.gl.COMPARE_REF_TO_TEXTURE,
                 [this.gl.TEXTURE_COMPARE_FUNC]: this.gl.LEQUAL,
-                [this.gl.TEXTURE_MIN_FILTER]: this.gl.NEAREST,
-                [this.gl.TEXTURE_MAG_FILTER]: this.gl.NEAREST,
-                [this.gl.TEXTURE_WRAP_S]: this.gl.REPEAT,
-                [this.gl.TEXTURE_WRAP_T]: this.gl.REPEAT,
+                [this.gl.TEXTURE_MIN_FILTER]: this.gl.LINEAR,
+                [this.gl.TEXTURE_MAG_FILTER]: this.gl.LINEAR,
+                [this.gl.TEXTURE_WRAP_S]: this.gl.CLAMP_TO_EDGE,
+                [this.gl.TEXTURE_WRAP_T]: this.gl.CLAMP_TO_EDGE,
                 [this.gl.TEXTURE_BASE_LEVEL]: 0,
                 [this.gl.TEXTURE_MAX_LEVEL]: 0,
             }
@@ -117,22 +117,22 @@ export class GraphicsManager {
 
         this.point_shadow_depth_buffer = this.create_framebuffer(
             `point_shadow_depth_buffer`,
-            this.shadow_resolution/6,
-            this.shadow_resolution/6,
             [
                 {
                     name:"depth",
-                    type:AttachmentType.TEXTURE_ARRAY_COLOR,
+                    type:AttachmentType.TEXTURE_ARRAY_DEPTH,
                     texture:this.point_light_shadow_map_texture,
                     texture_array_index:this.point_lights.length * 6
                 }
-            ]
+            ],
+              DrawFlag.DEPTH_TEST
+            | DrawFlag.DEPTH_FUNC_LESS
+            | DrawFlag.CULL_FRONT
+            | DrawFlag.FORCE_WRITE_DEPTH
         );
 
         this.directional_shadow_depth_buffer = this.create_framebuffer(
             `directional_shadow_depth_buffer`,
-            this.shadow_resolution,
-            this.shadow_resolution,
             [
                 {
                     name:"depth",
@@ -140,7 +140,10 @@ export class GraphicsManager {
                     texture:this.directional_light_shadow_map_texture,
                     texture_array_index:this.directional_lights.length
                 }
-            ]
+            ],
+              DrawFlag.DEPTH_TEST
+            | DrawFlag.DEPTH_FUNC_LESS
+            | DrawFlag.CULL_FRONT
         );
     }
 
@@ -201,8 +204,8 @@ export class GraphicsManager {
         this.shader_program = null;
     }
 
-    create_framebuffer(name:string, width:number, height:number, attachment_info:AttachmentInfo[]) {
-        const framebuffer = new Framebuffer(name, this, this.gl, width, height, attachment_info);
+    create_framebuffer(name:string, attachment_info:AttachmentInfo[], draw_flags:DrawBitFlags) {
+        const framebuffer = new Framebuffer(name, this, this.gl, attachment_info, draw_flags);
         this.framebuffers[name] = framebuffer;
         return framebuffer;
     }
@@ -211,26 +214,81 @@ export class GraphicsManager {
         const framebuffer = this.framebuffers[name];
         if (this.framebuffer === framebuffer)
             return;
+        
         this.framebuffer = framebuffer;
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, this.framebuffer.webgl_frame_buffer);
-        this.gl.viewport(0, 0, this.framebuffer.width, this.framebuffer.height);
-        if (this.framebuffer.use_depth_buffer) {            
-            this.gl.enable(this.gl.DEPTH_TEST);
-            this.gl.clearDepth(1.0);
-            this.gl.depthMask(true);
-            this.gl.depthFunc(this.gl.LESS);
+        const draw_flags = framebuffer.draw_flags;
+        const gl = this.gl;
+        
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.webgl_frame_buffer);
+        gl.viewport(0, 0, framebuffer.width, framebuffer.height);
+        if (has_flag(draw_flags, DrawFlag.DEPTH_TEST)) {
+            gl.enable(gl.DEPTH_TEST);
+            console.log("DEPTH TEST");
+            
+        }
+        
+        if (has_flag(draw_flags, DrawFlag.CULL_FRONT)) {
+            gl.cullFace(gl.FRONT);
+        } else if (has_flag(draw_flags, DrawFlag.CULL_BACK)) {
+            gl.cullFace(gl.FRONT);
+        } else if (has_flag(draw_flags, DrawFlag.CULL_FRONT_AND_BACK)) {
+            gl.cullFace(gl.FRONT_AND_BACK);
+        }
+
+        if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_LESS)) {
+            gl.depthFunc(gl.LESS);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_NEVER)) {
+            gl.depthFunc(gl.NEVER);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_EQUAL)) {
+            gl.depthFunc(gl.EQUAL);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_LESS_EQUAL)) {
+            gl.depthFunc(gl.LEQUAL);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_GREATER)) {
+            gl.depthFunc(gl.GREATER);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_NOT_EQUAL)) {
+            gl.depthFunc(gl.NOTEQUAL);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_GREATER_EQUAL)) {
+            gl.depthFunc(gl.GEQUAL);
+        } else if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_ALWAYS)) {
+            gl.depthFunc(gl.ALWAYS);
+        }
+        
+        if (framebuffer.use_depth_buffer || has_flag(draw_flags, DrawFlag.FORCE_WRITE_DEPTH)) {
+            gl.clearDepth(1.0);
+            gl.depthMask(true);
         }
     }
 
     unuse_framebuffer() {
         if (!this.framebuffer)
             return;
-        if (this.framebuffer.use_depth_buffer) {
-            this.gl.disable(this.gl.DEPTH_TEST);
+
+        const framebuffer = this.framebuffer;
+        const draw_flags = framebuffer.draw_flags;
+        const gl = this.gl;
+
+        if (draw_flags & DrawFlag.DEPTH_TEST) {
+            gl.disable(gl.DEPTH_TEST);
         }
-        this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null);
+        if (has_flag(draw_flags, DrawFlag.DEPTH_FUNC_NEVER)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_EQUAL)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_LESS_EQUAL)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_GREATER)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_NOT_EQUAL)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_GREATER_EQUAL)
+         || has_flag(draw_flags, DrawFlag.DEPTH_FUNC_ALWAYS)) {
+            gl.depthFunc(gl.LESS);
+        }
+        if (
+            has_flag(draw_flags, DrawFlag.CULL_FRONT)
+         || has_flag(draw_flags, DrawFlag.CULL_BACK)
+         || has_flag(draw_flags, DrawFlag.CULL_FRONT_AND_BACK)
+        ) {
+            gl.cullFace(gl.BACK);
+        }
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         this.framebuffer = null;
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
     set_uniform(label:string, value:any, transpose:boolean = false, warn:boolean = false) {
@@ -289,7 +347,7 @@ export class GraphicsManager {
                 this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit! + label_index);
                 break;
             case WebGLUniformType.TEXTURE_2D_ARRAY:
-            case WebGLUniformType.SHADOW_2D_ARRAY:
+            case WebGLUniformType.SHADOW_2D_ARRAY:                
                 this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit! + label_index);
                 this.gl.bindTexture(this.gl.TEXTURE_2D_ARRAY, (value as Texture).webgl_texture);
                 this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit! + label_index);
@@ -577,14 +635,10 @@ export class GraphicsManager {
         shader_prog_3d.add_uniform("u_directional_light_space_matrix[]", WebGLUniformType.F4M);
         shader_prog_3d.add_uniform("u_point_light_space_matrix[]", WebGLUniformType.F4M);
         shader_prog_3d.add_uniform("directional_light_shadow_maps", WebGLUniformType.SHADOW_2D_ARRAY);
-        shader_prog_3d.add_uniform("point_light_shadow_maps", WebGLUniformType.TEXTURE_2D_ARRAY);
+        shader_prog_3d.add_uniform("point_light_shadow_maps", WebGLUniformType.SHADOW_2D_ARRAY);
         shader_prog_3d.add_uniform("shadow_map_size", WebGLUniformType.F2V);
 
         shader_prog_3d.build();
-
-        shader_prog_3d.use();
-        this.set_uniform("face_selector", get_face_cube_map_texture(this));
-        this.clear_shader();
 
         return shader_prog_3d;
     }

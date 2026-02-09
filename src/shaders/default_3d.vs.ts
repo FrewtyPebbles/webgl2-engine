@@ -1,7 +1,6 @@
 export default `#version 300 es
-precision highp float;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DArray;
+precision lowp float;
+precision lowp sampler2DArrayShadow;
 
 uniform mediump int directional_lights_count;
 uniform mediump int point_lights_count;

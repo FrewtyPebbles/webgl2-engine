@@ -46,8 +46,6 @@ export class DirectionalLight extends Light {
             
             this.framebuffer.clear();
 
-            this.engine.graphics_manager.gl.cullFace(this.engine.graphics_manager.gl.FRONT);
-
             const corners = this.get_frustum_corners_world_space(
                 this.engine.main_scene.main_camera_3d.get_projection_matrix(this.engine.canvas),
                 this.engine.main_scene.main_camera_3d.get_view_matrix()
@@ -69,7 +67,6 @@ export class DirectionalLight extends Light {
                 time, delta_time
             );
 
-            this.engine.graphics_manager.gl.cullFace(this.engine.graphics_manager.gl.BACK);
 
             this.engine.graphics_manager.unuse_framebuffer();
 

@@ -346,6 +346,7 @@ export class CubeMapTexture implements Disposable {
     gm:GraphicsManager;
     name:string;
     webgl_texture: WebGLTexture;
+    size:number;
 
     constructor(gm:GraphicsManager,
         name:string,
@@ -439,6 +440,7 @@ export class CubeMapTexture implements Disposable {
         
         if (arg6 === undefined) {
             const size:number = arg1;
+            this.size = size;
             const texture_type:TextureType = arg2;
             const mip_level:number = arg3;
             const image_type:number = arg4;
@@ -481,6 +483,8 @@ export class CubeMapTexture implements Disposable {
                 image_type = arg10 ? arg10 : UNSIGNED_BYTE;
             }
 
+            this.size = size;
+            
             this.webgl_texture = this.create_texture(size, [
                 image_right,
                 image_left,

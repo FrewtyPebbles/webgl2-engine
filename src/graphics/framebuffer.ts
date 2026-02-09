@@ -28,29 +28,53 @@ export interface AttachmentInfo {
     color_attachment_number?:number;
 }
 
+// These determine what to enable or disable when binding the framebuffer.
+export enum DrawFlag {
+    DEPTH_TEST = 0,
+    CULL_FRONT = 1 << 0,
+    CULL_BACK = 1 << 1,
+    CULL_FRONT_AND_BACK = 1 << 2,
+    DEPTH_FUNC_NEVER = 1 << 3,
+    DEPTH_FUNC_LESS = 1 << 4,
+    DEPTH_FUNC_EQUAL = 1 << 5,
+    DEPTH_FUNC_LESS_EQUAL = 1 << 6,
+    DEPTH_FUNC_GREATER = 1 << 7,
+    DEPTH_FUNC_NOT_EQUAL = 1 << 8,
+    DEPTH_FUNC_GREATER_EQUAL = 1 << 9,
+    DEPTH_FUNC_ALWAYS = 1 << 10,
+    FORCE_WRITE_DEPTH = 1 << 11,
+}
+
+export type DrawBitFlags = number;
+
+export function has_flag(bit_flag:DrawBitFlags, flag:DrawFlag):boolean {
+    return (bit_flag & flag) === flag;
+}
+
 export class Framebuffer implements Disposable {
     name:string;
     gl:WebGL2RenderingContext;
     gm:GraphicsManager;
-    width:number;
-    height:number;
     clear_color:Vec4;
+    width:number = 0;
+    height:number = 0;
     webgl_frame_buffer:WebGLFramebuffer;
     attachment_info_map:{[key:string]:AttachmentInfo} = {};
     use_depth_buffer:boolean = false;
     use_color_buffer:boolean = false;
     color_attachment_count:number = 0;
     read_source_color_attachment:number = 0
+    draw_flags:DrawBitFlags = 0;
 
-    constructor(name:string, gm:GraphicsManager, gl:WebGL2RenderingContext, width:number, height:number, attachment_infos:AttachmentInfo[], clear_color:Vec4 = new Vec4(0,0,0,1), read_from_back_buffer:boolean = false) {
+    constructor(name:string, gm:GraphicsManager, gl:WebGL2RenderingContext, attachment_infos:AttachmentInfo[], draw_flags:DrawBitFlags, clear_color:Vec4 = new Vec4(0,0,0,1), read_from_back_buffer:boolean = false) {
         this.name = name
         this.gl = gl;
         this.gm = gm;
         this.name = name;
-        this.width = width;
-        this.height = height;
         this.clear_color = clear_color;
         this.webgl_frame_buffer = this.gl.createFramebuffer();
+        this.draw_flags = draw_flags;
+        
 
         let attachment_numbers:number[] = []
 
@@ -59,6 +83,12 @@ export class Framebuffer implements Disposable {
         for (const attachment of attachment_infos) {
             this.create_attachment(attachment, attachment_numbers);
             this.attachment_info_map[attachment.name] = attachment;
+            if (attachment.texture instanceof Texture) {
+                this.width = attachment.texture.width;
+                this.height = attachment.texture.height;
+            } else if (attachment.texture instanceof CubeMapTexture) {
+                this.width = this.height = attachment.texture.size;
+            }
         }
         this.gl.drawBuffers(attachment_numbers.length ? attachment_numbers : [gl.NONE]);
         if (read_from_back_buffer)

@@ -95,8 +95,6 @@ uniform sampler2DArray point_light_shadow_maps;
 
 uniform vec2 shadow_map_size;
 
-uniform samplerCube face_selector;
-
 uniform mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
 uniform mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
 
