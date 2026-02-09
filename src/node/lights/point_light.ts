@@ -155,7 +155,7 @@ export class PointLight extends Light {
 
     protected on_parented(): void {
         this.engine.graphics_manager.point_lights.push(this);
-        this.engine.graphics_manager.resize_directional_shadow_map();
+        this.engine.graphics_manager.resize_point_shadow_map();
     }
 
     protected on_removed(node:this, engine:Engine, parent:Node): void {
@@ -164,6 +164,6 @@ export class PointLight extends Light {
         if (light_index > -1) {
             this.engine.graphics_manager.point_lights.splice(light_index, 1);
         }
-        this.engine.graphics_manager.resize_directional_shadow_map();
+        this.engine.graphics_manager.resize_point_shadow_map();
     }
 }

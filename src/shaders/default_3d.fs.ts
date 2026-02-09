@@ -164,23 +164,6 @@ float calculate_point_shadow(int index, PointLight light) {
     float current_depth = light_distance / light.range;
 
     float shadow = 0.0;
-    float sample_scale = 10.0;
-    vec2 texel_size = 1.0 / shadow_map_size;
-    // for(int x = -1; x <= 1; ++x) {
-    //     for(int y = -1; y <= 1; ++y) {
-    //         shadow += texture(
-    //             point_light_shadow_maps,
-    //             vec4(
-    //                 proj.xy + vec2(x, y)
-    //                 * sample_scale
-    //                 * texel_size,
-    //                 float(face_index),
-    //                 current_depth - bias
-    //             )
-    //         );
-    //     }
-    // }
-    // shadow /= 9.0;
 
     shadow += texture(
         point_light_shadow_maps,
@@ -220,21 +203,6 @@ float calculate_directional_shadow(int index, vec3 light_dir) {
 
     // apply blur to shadow edges
     float shadow = 0.0;
-
-    // vec2 texel_size = 1.0 / shadow_map_size;
-    // for(int x = -1; x <= 1; ++x) {
-    //     for(int y = -1; y <= 1; ++y) {
-    //         shadow += texture(directional_light_shadow_maps, vec4(
-    //             proj_coords.xy
-    //             + vec2(x, y)
-    //             * texel_size
-    //             , 
-    //             float(index), 
-    //             current_depth
-    //         ));
-    //     }
-    // }
-    // shadow /= 9.0
 
     shadow += texture(directional_light_shadow_maps, vec4(
         proj_coords.xy, 

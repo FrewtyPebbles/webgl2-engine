@@ -222,9 +222,7 @@ export class GraphicsManager {
         gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer.webgl_frame_buffer);
         gl.viewport(0, 0, framebuffer.width, framebuffer.height);
         if (has_flag(draw_flags, DrawFlag.DEPTH_TEST)) {
-            gl.enable(gl.DEPTH_TEST);
-            console.log("DEPTH TEST");
-            
+            gl.enable(gl.DEPTH_TEST);            
         }
         
         if (has_flag(draw_flags, DrawFlag.CULL_FRONT)) {

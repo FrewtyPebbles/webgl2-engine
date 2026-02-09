@@ -16,6 +16,7 @@ function on_removed(node, engine, parent)
 end
 
 function on_update(node, engine, time, delta_time)
+    -- print(1.0 / delta_time);
     local im = engine.input_manager
     local gm = engine.graphics_manager
 

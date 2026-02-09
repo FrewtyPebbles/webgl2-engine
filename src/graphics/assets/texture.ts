@@ -119,7 +119,7 @@ export class Texture implements Disposable {
         this.image_array_size = image_array_size;
     }
 
-    resize_texture_array(new_size:number) {
+    resize_texture_array(new_size:number) {        
         this.gm.gl.bindTexture(this.gm.gl.TEXTURE_2D_ARRAY, this.webgl_texture);
         this.gm.gl.texImage3D(
             this.gm.gl.TEXTURE_2D_ARRAY,
