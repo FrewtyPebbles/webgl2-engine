@@ -5,5 +5,5 @@ newmtl colored
 
 kd 0.5 0.2 0.5
 
-pm 0
-pr 1
+pm 1
+pr 0.2

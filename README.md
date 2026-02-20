@@ -51,6 +51,7 @@ The engine runtime currently uses a lua frontend via a [wasmoon](https://github.
          - Multi-file shaders/importable functions
          - Struct member functions
          - Namespaces
+         - Compilation into WGSL
     
  - A domain specific asset file format which stores node trees and scenes in a zipped json and binary combination format. The asset importer will be able to convert OBJ and glTF files to this format.
      - **My Thoughts** : This is very do-able and would do alot for my own and the end game developer's sanity. It will also make things much easier when I try to add an actual editor.

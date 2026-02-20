@@ -15,7 +15,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "ts-node build_scripts/sync_shaders.mts && tsc",
+    "build": "tsx build_scripts/sync_shaders.mts && tsc",
     "build:watch": "ts-node build_scripts/sync_shaders.mts && tsc --watch",
     "clean": "rimraf dist"
   },
@@ -34,6 +34,7 @@
     "glob": "^13.0.0",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },
   "peerDependencies": {
