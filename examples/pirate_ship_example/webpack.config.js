@@ -47,9 +47,11 @@ export default {
   },
   resolve: {
     extensions: ['.ts', '.js'],
+    symlinks: true,
     alias: {
       // Force single instance of @vicimpa/glm
-      '@vicimpa/glm': path.resolve(__dirname, 'node_modules/@vicimpa/glm')
+      '@vicimpa/glm': path.resolve(__dirname, 'node_modules/@vicimpa/glm'),
+      'vanta-engine': path.resolve(__dirname, 'node_modules/vanta-engine'),
     },
     fallback: {
       url: false,

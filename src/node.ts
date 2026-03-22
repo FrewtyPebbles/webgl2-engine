@@ -1,6 +1,6 @@
 import { Vec3, Vec2, Mat4, Quat, Vec4 } from '@vicimpa/glm';
-import { GraphicsManager } from './graphics/graphics_manager.ts';
-import Engine from './engine.ts';
+import { GraphicsManager } from './graphics/graphics_manager';
+import Engine from './engine';
 
 type Constructor<T> = new (...args: any[]) => T;
 

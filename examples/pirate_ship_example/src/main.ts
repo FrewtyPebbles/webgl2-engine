@@ -1,5 +1,5 @@
 import { Mat3, Mat4, Quat, Vec2, vec3, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, Sprite2D, Node, AttachmentType, PointLight, Texture, CubeMapTexture, TextureType, Camera3D, DirectionalLight, AssetFile, Node3D } from "webgl2-engine";
+import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, Sprite2D, Node, AttachmentType, PointLight, Texture, CubeMapTexture, TextureType, Camera3D, DirectionalLight, AssetFile, Node3D } from "vanta-engine";
 
 async function startup(engine:Engine) {
 

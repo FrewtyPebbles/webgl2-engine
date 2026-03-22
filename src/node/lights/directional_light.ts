@@ -1,9 +1,9 @@
 import { Mat3, Mat4, Quat, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine from "../../engine.ts";
-import { AttachmentType, Framebuffer } from "../../graphics/framebuffer.ts";
-import { ShaderProgram } from "../../graphics/shader_program.ts";
-import { Node } from "../../node.ts";
-import { Light } from "./light.ts";
+import Engine from "../../engine";
+import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
+import { ShaderProgram } from "../../graphics/shader_program";
+import { Node } from "../../node";
+import { Light } from "./light";
 
 export class DirectionalLight extends Light {
 

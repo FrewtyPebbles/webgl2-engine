@@ -1,6 +1,6 @@
 import { Mat4 } from "@vicimpa/glm";
-import { Node3D } from "../node.ts";
-import { degrees_to_radians } from "../graphics/utility.ts";
+import { Node3D } from "../node";
+import { degrees_to_radians } from "../graphics/utility";
 
 
 export class Camera3D extends Node3D {

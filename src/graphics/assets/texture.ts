@@ -1,4 +1,4 @@
-import { GraphicsManager } from "../graphics_manager.ts";
+import { GraphicsManager } from "../graphics_manager";
 
 const UNSIGNED_BYTE = 5121;
 

@@ -1,11 +1,11 @@
 import { Mat4, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine from "../../engine.ts";
-import { Node, Node3D } from "../../node.ts";
-import { Light } from "./light.ts";
-import { ShaderProgram } from "../../graphics/shader_program.ts";
-import { AttachmentType, Framebuffer } from "../../graphics/framebuffer.ts";
-import { CubeMapTexture, TextureType } from "../../graphics/assets/texture.ts";
-import { GraphicsManager } from "../../graphics/graphics_manager.ts";
+import Engine from "../../engine";
+import { Node, Node3D } from "../../node";
+import { Light } from "./light";
+import { ShaderProgram } from "../../graphics/shader_program";
+import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
+import { CubeMapTexture, TextureType } from "../../graphics/assets/texture";
+import { GraphicsManager } from "../../graphics/graphics_manager";
 
 // TODO: FIX SHADOWS NEGATED BY OBJECTS UNDERNEATH OBJECTS ONTOP OF THE OBJECTS
 

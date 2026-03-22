@@ -1,10 +1,10 @@
 import { LuaEngine, LuaFactory } from "wasmoon";
-import Engine from "./engine.ts";
-import { Node, Node2D, Node3D } from "./node.ts";
+import Engine from "./engine";
+import { Node, Node2D, Node3D } from "./node";
 
 import { Vec2, Vec3, Vec4, Mat2, Mat3, Mat4, Quat } from "@vicimpa/glm"
-import { Object3D } from "./node/object3d.ts";
-import { Sprite2D } from "./node/sprite2d.ts";
+import { Object3D } from "./node/object3d";
+import { Sprite2D } from "./node/sprite2d";
 
 // This class handles all of the lua hooks into different nodes.
 // It uses a single lua engine since webgl2 cant be multithreaded.

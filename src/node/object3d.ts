@@ -1,9 +1,9 @@
 import { Mat4, Vec2, Vec4 } from "@vicimpa/glm";
-import Engine from "../engine.ts";
-import { Node3D } from "../node.ts";
-import { Skybox } from "./skybox.ts";
-import { Model } from "../graphics/assets/model.ts";
-import { CubeMapTexture } from "../graphics/assets/texture.ts";
+import Engine from "../engine";
+import { Node3D } from "../node";
+import { Skybox } from "./skybox";
+import { Model } from "../graphics/assets/model";
+import { CubeMapTexture } from "../graphics/assets/texture";
 
 export class Object3D extends Node3D {
     model:Model;

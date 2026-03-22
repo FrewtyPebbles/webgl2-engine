@@ -1,22 +1,35 @@
 {
-  "name": "webgl2-engine",
-  "version": "1.0.0",
-  "description": "",
+  "name": "vanta-engine",
+  "version": "1.0.7",
+  "description": "A node based 3D and 2D engine compatible with web environments.",
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "repository": {
+    "url":"https://github.com/FrewtyPebbles/Vanta-3D-Engine"
+  },
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
+  },
+  "browser": {
+    "module": false,
+    "fs": false,
+    "path": false,
+    "url": false
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsx build_scripts/sync_shaders.mts && tsc",
-    "build:watch": "ts-node build_scripts/sync_shaders.mts && tsc --watch",
+    "build": "tsx build_scripts/sync_shaders.mts && tsup",
+    "prepublishOnly": "npm run build",
+    "build:watch": "ts-node build_scripts/sync_shaders.mts && tsup --watch",
     "clean": "rimraf dist"
   },
   "keywords": [
@@ -34,6 +47,7 @@
     "glob": "^13.0.0",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   },

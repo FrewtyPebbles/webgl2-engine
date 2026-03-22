@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 import { globSync } from 'glob';
 
 const extensions = [".fs", ".vs", ".gs", ".glsl"]

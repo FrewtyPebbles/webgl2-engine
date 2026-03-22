@@ -1,6 +1,6 @@
 import { Vec3 } from "@vicimpa/glm";
-import Engine from "../../engine.ts";
-import { GraphicsManager } from "../graphics_manager.ts";
+import Engine from "../../engine";
+import { GraphicsManager } from "../graphics_manager";
 
 var skybox_VAO:WebGLVertexArrayObject|null = null
 var skybox_VAO_index_count:number = 0;

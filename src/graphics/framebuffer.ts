@@ -1,6 +1,6 @@
 import { Vec4 } from "@vicimpa/glm";
-import { GraphicsManager } from "./graphics_manager.ts";
-import { CubeMapTexture, Texture, TextureType } from "./assets/texture.ts";
+import { GraphicsManager } from "./graphics_manager";
+import { CubeMapTexture, Texture, TextureType } from "./assets/texture";
 
 export enum AttachmentType {
     TEXTURE_COLOR = "TEXTURE_COLOR",

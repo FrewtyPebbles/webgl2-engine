@@ -1,5 +1,5 @@
-import { GraphicsManager } from "./graphics_manager.ts";
-import { get_uniform_label_index, normalize_uniform_label } from "./utility.ts";
+import { GraphicsManager } from "./graphics_manager";
+import { get_uniform_label_index, normalize_uniform_label } from "./utility";
 
 export type WebGLShaderType = number;
 

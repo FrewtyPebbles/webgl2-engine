@@ -25,7 +25,6 @@
   },
   "dependencies": {
     "@vicimpa/glm": "^0.1.10",
-    "path-browserify": "^1.0.1",
-    "webgl2-engine": "file:../.."
+    "path-browserify": "^1.0.1"
   }
 }

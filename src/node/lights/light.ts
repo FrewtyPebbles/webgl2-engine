@@ -1,9 +1,9 @@
 import { Mat3, Mat4, Quat, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine from "../../engine.ts";
-import { Node, Node3D } from "../../node.ts";
-import { ShaderProgram } from "../../graphics/shader_program.ts";
-import { AttachmentType, Framebuffer } from "../../graphics/framebuffer.ts";
-import { Texture, TextureType } from "../../graphics/assets/texture.ts";
+import Engine from "../../engine";
+import { Node, Node3D } from "../../node";
+import { ShaderProgram } from "../../graphics/shader_program";
+import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
+import { Texture, TextureType } from "../../graphics/assets/texture";
 
 
 

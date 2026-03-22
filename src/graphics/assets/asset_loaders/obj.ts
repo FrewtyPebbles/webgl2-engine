@@ -1,13 +1,13 @@
 import { Vec3 } from "@vicimpa/glm";
-import { GraphicsManager } from "../../graphics_manager.ts";
-import { Texture, TextureType } from "../texture.ts";
-import { Model } from "../model.ts";
-import { Material } from "../material.ts";
-import { Mesh } from "../mesh.ts";
-import path from "path";
-import { Node3D } from "../../../node.ts";
-import Engine from "../../../engine.ts";
-import { Object3D } from "../../../node/object3d.ts";
+import { GraphicsManager } from "../../graphics_manager";
+import { Texture, TextureType } from "../texture";
+import { Model } from "../model";
+import { Material } from "../material";
+import { Mesh } from "../mesh";
+import { Node3D } from "../../../node";
+import Engine from "../../../engine";
+import { Object3D } from "../../../node/object3d";
+import { parse_path, join_path, basename_path, dirname_path } from "../../utility";
 
 
 export namespace AssetFile {
@@ -211,7 +211,7 @@ export namespace AssetFile {
         }
 
         export async function load_obj(engine:Engine, obj_path:string, image_assets_path:string):Promise<Node3D> {
-            const obj_name = path.parse(obj_path).name;
+            const obj_name = parse_path(obj_path).name;
             var image_assets:Map<string, Texture> = new Map();
             var material_assets:Map<string, Material> = new Map();
             var obj_root_node:Node3D = new Node3D(engine, obj_name + "_root")
@@ -548,7 +548,7 @@ export namespace AssetFile {
                 const map_type_string = parts.shift()
                 var current_flag_arguments:string[] = [];
                 if (texture_file) {
-                    const texture_file_url = path.join(image_assets_path, texture_file);
+                    const texture_file_url = join_path(image_assets_path, texture_file);
                     
                     const res = await fetch(texture_file_url.trim());
                     if (res.ok) {
@@ -666,8 +666,8 @@ export namespace AssetFile {
             }
 
             static async parse_obj(engine:Engine, file_url:string, text: string, image_assets_path:string, image_assets:Map<string, Texture>): Promise<[OBJ.Object[], OBJ.MaterialData[]]> {
-                const file_name = path.basename(file_url);
-                const file_directory = path.dirname(file_url);
+                const file_name = basename_path(file_url);
+                const file_directory = dirname_path(file_url);
                 const obj_name = file_name.split(".")[0];
                 var object_list:OBJ.Object[] = [];
                 var material_list:OBJ.MaterialData[] = [];
@@ -720,7 +720,7 @@ export namespace AssetFile {
                     const parts = line.trim().split(/\s+/);
                     switch (parts[0].toLowerCase()) {
                         case "mtllib":                            
-                            material_list = material_list.concat(await Parser.load_mtl(engine, path.join(file_directory, parts[1]), image_assets_path, image_assets));                            
+                            material_list = material_list.concat(await Parser.load_mtl(engine, join_path(file_directory, parts[1]), image_assets_path, image_assets));                            
                             break;
 
                         case "usemtl":

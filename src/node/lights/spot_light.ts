@@ -1,7 +1,7 @@
 import { Mat3, Mat4, Quat, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine from "../../engine.ts";
-import { Light } from "./light.ts";
-import { Node } from "../../node.ts";
+import Engine from "../../engine";
+import { Light } from "./light";
+import { Node } from "../../node";
 
 export class SpotLight extends Light {
     range:number;

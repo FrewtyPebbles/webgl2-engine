@@ -1,9 +1,9 @@
 import { Mat4, Vec3 } from "@vicimpa/glm";
-import Engine from "../engine.ts";
-import { Node } from "../node.ts";
-import { ShaderProgram } from "../graphics/shader_program.ts";
-import { CubeMapTexture } from "../graphics/assets/texture.ts";
-import { get_skybox_vao, VAOInfo } from "../graphics/assets/vaos.ts";
+import Engine from "../engine";
+import { Node } from "../node";
+import { ShaderProgram } from "../graphics/shader_program";
+import { CubeMapTexture } from "../graphics/assets/texture";
+import { get_skybox_vao, VAOInfo } from "../graphics/assets/vaos";
 
 export class Skybox extends Node {
     vao:VAOInfo;

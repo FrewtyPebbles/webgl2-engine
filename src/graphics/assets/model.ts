@@ -1,7 +1,7 @@
-import { GraphicsManager } from "../graphics_manager.ts";
-import { ShaderProgram } from "../shader_program.ts";
-import { Material } from "./material.ts";
-import { Mesh } from "./mesh.ts";
+import { GraphicsManager } from "../graphics_manager";
+import { ShaderProgram } from "../shader_program";
+import { Material } from "./material";
+import { Mesh } from "./mesh";
 
 export class Model {
     gm:GraphicsManager;

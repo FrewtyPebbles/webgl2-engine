@@ -1,28 +1,28 @@
 import { Vec3, Vec2, Mat4, Quat, Vec4, Mat2, Mat3 } from '@vicimpa/glm';
-import { Node3D, Node } from '../node.ts';
-import Engine from '../engine.ts';
-import { get_uniform_label_index, normalize_uniform_label } from './utility.ts';
-import { ShaderProgram, WebGLUniformType } from './shader_program.ts';
-import { AttachmentInfo, AttachmentType, DrawBitFlags, DrawFlag, Framebuffer, has_flag } from './framebuffer.ts';
-import { CubeMapTexture, Texture, TextureType } from './assets/texture.ts';
+import { Node3D, Node } from '../node';
+import Engine from '../engine';
+import { get_uniform_label_index, normalize_uniform_label } from './utility';
+import { ShaderProgram, WebGLUniformType } from './shader_program';
+import { AttachmentInfo, AttachmentType, DrawBitFlags, DrawFlag, Framebuffer, has_flag } from './framebuffer';
+import { CubeMapTexture, Texture, TextureType } from './assets/texture';
 
-import DEFAULT_2D_VERTEX_SHADER from '../shaders/default_2d.vs.ts';
-import DEFAULT_2D_FRAGMENT_SHADER from '../shaders/default_2d.fs.ts';
+import DEFAULT_2D_VERTEX_SHADER from '../shaders/default_2d.vs';
+import DEFAULT_2D_FRAGMENT_SHADER from '../shaders/default_2d.fs';
 
-import DEFAULT_3D_VERTEX_SHADER from '../shaders/default_3d.vs.ts';
-import DEFAULT_3D_FRAGMENT_SHADER from '../shaders/default_3d.fs.ts';
+import DEFAULT_3D_VERTEX_SHADER from '../shaders/default_3d.vs';
+import DEFAULT_3D_FRAGMENT_SHADER from '../shaders/default_3d.fs';
 
-import DEFAULT_SKYBOX_VERTEX_SHADER from '../shaders/default_skybox.vs.ts';
-import DEFAULT_SKYBOX_FRAGMENT_SHADER from '../shaders/default_skybox.fs.ts';
+import DEFAULT_SKYBOX_VERTEX_SHADER from '../shaders/default_skybox.vs';
+import DEFAULT_SKYBOX_FRAGMENT_SHADER from '../shaders/default_skybox.fs';
 
-import DEFAULT_DIRECTIONAL_SHADOW_VERTEX_SHADER from "../shaders/default_directional_shadow.vs.ts";
-import DEFAULT_DIRECTIONAL_SHADOW_FRAGMENT_SHADER from "../shaders/default_directional_shadow.fs.ts";
+import DEFAULT_DIRECTIONAL_SHADOW_VERTEX_SHADER from "../shaders/default_directional_shadow.vs";
+import DEFAULT_DIRECTIONAL_SHADOW_FRAGMENT_SHADER from "../shaders/default_directional_shadow.fs";
 
-import DEFAULT_POINT_SHADOW_VERTEX_SHADER from "../shaders/default_point_shadow.vs.ts";
-import DEFAULT_POINT_SHADOW_FRAGMENT_SHADER from "../shaders/default_point_shadow.fs.ts";
-import { PointLight } from '../node/lights/point_light.ts';
-import { DirectionalLight } from '../node/lights/directional_light.ts';
-import { SpotLight } from '../node/lights/spot_light.ts';
+import DEFAULT_POINT_SHADOW_VERTEX_SHADER from "../shaders/default_point_shadow.vs";
+import DEFAULT_POINT_SHADOW_FRAGMENT_SHADER from "../shaders/default_point_shadow.fs";
+import { PointLight } from '../node/lights/point_light';
+import { DirectionalLight } from '../node/lights/directional_light';
+import { SpotLight } from '../node/lights/spot_light';
 
 export type WebGLType = number;
 

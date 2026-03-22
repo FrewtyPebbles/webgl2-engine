@@ -1,10 +1,10 @@
-import { GraphicsManager } from "./graphics/graphics_manager.ts";
-import { Camera3D } from "./node/camera3d.ts";
-import { Node } from "./node.ts";
-import { InputManager } from "./input/input_manager.ts";
-import Utility from "./utility.ts";
-import { HookManager } from "./hook_manager.ts";
-import { Scene } from "./scene.ts";
+import { GraphicsManager } from "./graphics/graphics_manager";
+import { Camera3D } from "./node/camera3d";
+import { Node } from "./node";
+import { InputManager } from "./input/input_manager";
+import Utility from "./utility";
+import { HookManager } from "./hook_manager";
+import { Scene } from "./scene";
 
 
 export default class Engine {

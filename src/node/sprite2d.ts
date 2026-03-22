@@ -1,9 +1,9 @@
 import { Mat4 } from "@vicimpa/glm";
-import Engine from "../engine.ts";
-import { Node2D } from "../node.ts";
-import { ShaderProgram } from "../graphics/shader_program.ts";
-import { get_sprite_vao, VAOInfo } from "../graphics/assets/vaos.ts";
-import { Texture } from "../graphics/assets/texture.ts";
+import Engine from "../engine";
+import { Node2D } from "../node";
+import { ShaderProgram } from "../graphics/shader_program";
+import { get_sprite_vao, VAOInfo } from "../graphics/assets/vaos";
+import { Texture } from "../graphics/assets/texture";
 
 export class Sprite2D extends Node2D {
     shader_program:ShaderProgram;

@@ -1,5 +1,5 @@
 import { Vec3 } from "@vicimpa/glm";
-import { GraphicsManager } from "../graphics_manager.ts";
+import { GraphicsManager } from "../graphics_manager";
 
 export class Mesh {
     gm: GraphicsManager;

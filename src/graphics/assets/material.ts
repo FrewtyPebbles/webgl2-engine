@@ -1,7 +1,7 @@
 import { Vec3 } from "@vicimpa/glm";
-import { GraphicsManager } from "../graphics_manager.ts";
-import { ShaderProgram } from "../shader_program.ts";
-import { Texture } from "./texture.ts";
+import { GraphicsManager } from "../graphics_manager";
+import { ShaderProgram } from "../shader_program";
+import { Texture } from "./texture";
 
 export interface MaterialOptionsObject {
     enable_depth_test?:boolean;
