@@ -68,7 +68,7 @@ struct DirectionalLight {
     float specular;
 };
 
-uniform u_global {
+layout(std140) uniform u_global {
     mediump int directional_lights_count;
     mediump int point_lights_count;
     mediump int spot_lights_count;
@@ -86,9 +86,10 @@ uniform u_global {
     mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
     mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
     vec3 camera_position;
+    float time;
 };
 
-uniform u_object {
+layout(std140) uniform u_object {
     Material material;
 };
 

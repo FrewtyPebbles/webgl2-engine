@@ -1,30 +1,8 @@
 import { GraphicsManager } from "./graphics_manager";
 import { get_uniform_label_index, normalize_uniform_label } from "./utility";
-import { MEMORY_USAGE_MODE, UniformBufferObject } from "./assets/uniform_buffer";
+import { Members, MEMORY_USAGE_MODE, UniformBufferObject, WebGLUniformType } from "./assets/uniform_buffer";
 
 export type WebGLShaderType = number;
-
-export enum WebGLUniformType {
-    TEXTURE_2D,
-    TEXTURE_2D_ARRAY,
-    TEXTURE_CUBE_MAP,
-    SHADOW_2D,
-    SHADOW_2D_ARRAY,
-    SHADOW_CUBE_MAP,
-    STRUCT,
-    F,
-    I,
-    B,
-    F2V,
-    I2V,
-    F3V,
-    I3V,
-    F4V,
-    I4V,
-    F2M,
-    F3M,
-    F4M,
-}
 
 export interface WebGLUniform {
     label:string;
@@ -60,7 +38,7 @@ export class ShaderProgram {
         this.shaders.push(shader);
     }
 
-    add_ubo(name:string, members:string[], memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
+    add_ubo(name:string, members:Members, memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
         this.ubos[name] = new UniformBufferObject(this, name, members, memory_usage_mode);
     }
 
