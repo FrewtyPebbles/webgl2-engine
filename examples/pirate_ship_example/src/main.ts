@@ -1,5 +1,5 @@
 import { Mat3, Mat4, Quat, Vec2, vec3, Vec3, Vec4 } from "@vicimpa/glm";
-import Engine, { load_obj, GraphicsManager, WebGLUniformType, Object3D, Skybox, InputManager, Sprite2D, Node, AttachmentType, PointLight, Texture, CubeMapTexture, TextureType, Camera3D, DirectionalLight, AssetFile, Node3D } from "vanta-engine";
+import Engine, { load_obj, GraphicsManager, Object3D, Skybox, InputManager, Sprite2D, Node, AttachmentType, PointLight, Texture, CubeMapTexture, TextureType, Camera3D, DirectionalLight, AssetFile, Node3D, WebGLUniformType, ArrayMember } from "vanta-engine";
 
 async function startup(engine:Engine) {
 
@@ -35,79 +35,84 @@ async function startup(engine:Engine) {
     shader_prog_submerged.add_shader(gm.gl.VERTEX_SHADER, await engine.UTIL.load_text_file("/assets/submerged.vs"));
     shader_prog_submerged.add_shader(gm.gl.FRAGMENT_SHADER, await engine.UTIL.load_text_file("/assets/submerged.fs"));
 
-    // utility
-    shader_prog_submerged.add_uniform("time", WebGLUniformType.F);
-
     // SHADOWS
     shader_prog_submerged.add_uniform("depth_cubemap", WebGLUniformType.TEXTURE_CUBE_MAP);
+
+    // GLOBAL STUFF
+    shader_prog_submerged.add_ubo("u_global", {
+        directional_lights_count: WebGLUniformType.I,
+        point_lights_count: WebGLUniformType.I,
+        spot_lights_count: WebGLUniformType.I,
+        point_lights: new ArrayMember({
+            position: WebGLUniformType.F3V,
+            color: WebGLUniformType.F3V,
+            range: WebGLUniformType.F,
+            energy: WebGLUniformType.F,
+            
+            ambient: WebGLUniformType.F,
+            diffuse: WebGLUniformType.F,
+            specular: WebGLUniformType.F,
+        }, 10),
+        spot_lights: new ArrayMember({
+            position: WebGLUniformType.F3V,
+            color: WebGLUniformType.F3V,
+            rotation: WebGLUniformType.F4M,
+            energy: WebGLUniformType.F,
+            range: WebGLUniformType.F,
+            cookie_radius: WebGLUniformType.F,
+            
+            ambient: WebGLUniformType.F,
+            diffuse: WebGLUniformType.F,
+            specular: WebGLUniformType.F,
+        }, 10),
+        directional_lights: new ArrayMember({
+            rotation: WebGLUniformType.F4M,
+            color: WebGLUniformType.F3V,
+            energy: WebGLUniformType.F,
+            
+            ambient: WebGLUniformType.F,
+            diffuse: WebGLUniformType.F,
+            specular: WebGLUniformType.F,
+        }, 10),
+        environment: {
+            ambient_light: WebGLUniformType.F3V,
+        },
+        shadow_map_size: WebGLUniformType.F2V,
+        u_directional_light_space_matrix: new ArrayMember(WebGLUniformType.F4M, 10),
+        u_point_light_space_matrix: new ArrayMember(WebGLUniformType.F4M, 60),
+        camera_position: WebGLUniformType.F3V
+    });
+
+    shader_prog_submerged.add_ubo("u_object", {
+        material: {
+            has_normal_texture: WebGLUniformType.B,
+            has_albedo_texture: WebGLUniformType.B,
+            albedo: WebGLUniformType.F3V,
+            has_metalic_texture: WebGLUniformType.B,
+            metalic: WebGLUniformType.F,
+            has_roughness_texture: WebGLUniformType.B,
+            roughness: WebGLUniformType.F,
+            has_ao_texture: WebGLUniformType.B,
+            ao: WebGLUniformType.F,
+        }
+    });
+
+    shader_prog_submerged.add_uniform("time", WebGLUniformType.F)
 
     // MVP
     shader_prog_submerged.add_uniform("u_model", WebGLUniformType.F4M);
     shader_prog_submerged.add_uniform("u_view", WebGLUniformType.F4M);
     shader_prog_submerged.add_uniform("u_projection", WebGLUniformType.F4M);
 
-    // environment
-    shader_prog_submerged.add_uniform("environment.ambient_light", WebGLUniformType.F3V);
-
-    // camera
-    shader_prog_submerged.add_uniform("camera_position", WebGLUniformType.F3V);
-
-    // lights
-    shader_prog_submerged.add_uniform("point_lights_count", WebGLUniformType.I);
-    shader_prog_submerged.add_uniform("spot_lights_count", WebGLUniformType.I);
-    shader_prog_submerged.add_uniform("directional_lights_count", WebGLUniformType.I);
-
-    /// point lights
-    shader_prog_submerged.add_uniform("point_lights[].position", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("point_lights[].color", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("point_lights[].range", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("point_lights[].energy", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("point_lights[].ambient", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("point_lights[].diffuse", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("point_lights[].specular", WebGLUniformType.F);
-
-    /// spot lights
-    shader_prog_submerged.add_uniform("spot_lights[].position", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("spot_lights[].color", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("spot_lights[].rotation", WebGLUniformType.F4M);
-    shader_prog_submerged.add_uniform("spot_lights[].range", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("spot_lights[].energy", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("spot_lights[].cookie_radius", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("spot_lights[].ambient", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("spot_lights[].diffuse", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("spot_lights[].specular", WebGLUniformType.F);
-
-    /// directional lights
-    shader_prog_submerged.add_uniform("directional_lights[].rotation", WebGLUniformType.F4M);
-    shader_prog_submerged.add_uniform("directional_lights[].color", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("directional_lights[].energy", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("directional_lights[].ambient", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("directional_lights[].diffuse", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("directional_lights[].specular", WebGLUniformType.F);
-
-    // material
-    shader_prog_submerged.add_uniform("material.has_normal_texture", WebGLUniformType.B);
-    shader_prog_submerged.add_uniform("material.has_albedo_texture", WebGLUniformType.B);
-    shader_prog_submerged.add_uniform("material.albedo", WebGLUniformType.F3V);
-    shader_prog_submerged.add_uniform("material.has_metalic_texture", WebGLUniformType.B);
-    shader_prog_submerged.add_uniform("material.metalic", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("material.has_roughness_texture", WebGLUniformType.B);
-    shader_prog_submerged.add_uniform("material.roughness", WebGLUniformType.F);
-    shader_prog_submerged.add_uniform("material.has_ao_texture", WebGLUniformType.B);
-    shader_prog_submerged.add_uniform("material.ao", WebGLUniformType.F);
-
     shader_prog_submerged.add_uniform("material_texture_albedo", WebGLUniformType.TEXTURE_2D);
     shader_prog_submerged.add_uniform("material_texture_normal", WebGLUniformType.TEXTURE_2D);
     shader_prog_submerged.add_uniform("material_texture_metalic", WebGLUniformType.TEXTURE_2D);
     shader_prog_submerged.add_uniform("material_texture_roughness", WebGLUniformType.TEXTURE_2D);
     shader_prog_submerged.add_uniform("material_texture_ao", WebGLUniformType.TEXTURE_2D);
-
+    
     // shadows
-    shader_prog_submerged.add_uniform("u_directional_light_space_matrix[]", WebGLUniformType.F4M);
-    shader_prog_submerged.add_uniform("u_point_light_space_matrix[]", WebGLUniformType.F4M);
     shader_prog_submerged.add_uniform("directional_light_shadow_maps", WebGLUniformType.SHADOW_2D_ARRAY);
     shader_prog_submerged.add_uniform("point_light_shadow_maps", WebGLUniformType.SHADOW_2D_ARRAY);
-    shader_prog_submerged.add_uniform("shadow_map_size", WebGLUniformType.F2V);
 
     shader_prog_submerged.build()
 

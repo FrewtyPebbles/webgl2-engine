@@ -1,15 +1,68 @@
 #version 300 es
-precision highp float;
-precision highp sampler2DArrayShadow;
-precision highp sampler2DArray;
-
-uniform mediump int directional_lights_count;
-uniform mediump int point_lights_count;
-uniform mediump int spot_lights_count;
+precision lowp float;
+precision lowp sampler2DArrayShadow;
 
 #define N_DIRECTIONAL_LIGHTS 10
 #define N_POINT_LIGHTS 10
 #define N_SPOT_LIGHTS 10
+
+struct PointLight {
+    vec3 position;
+    vec3 color;
+    float range;
+    float energy;
+
+    float ambient;
+    float diffuse;
+    float specular;
+};
+
+struct SpotLight {
+    vec3 position;
+    vec3 color;
+    mat4 rotation;
+    float energy;
+    float range;
+    float cookie_radius;
+
+    float ambient;
+    float diffuse;
+    float specular;
+};
+
+struct DirectionalLight {
+    mat4 rotation;
+    vec3 color;
+    float energy;
+
+    float ambient;
+    float diffuse;
+    float specular;
+};
+
+struct Environment {
+    vec3 ambient_light;
+};
+
+layout(std140) uniform u_global {
+    mediump int directional_lights_count;
+    mediump int point_lights_count;
+    mediump int spot_lights_count;
+
+    PointLight point_lights[N_POINT_LIGHTS];
+
+    SpotLight spot_lights[N_SPOT_LIGHTS];
+
+    DirectionalLight directional_lights[N_DIRECTIONAL_LIGHTS];
+    
+    Environment environment;
+    
+    vec2 shadow_map_size;
+
+    mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
+    mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
+    vec3 camera_position;
+};
 
 // Vertex position attribute
 layout(location = 0) in vec3 a_position;

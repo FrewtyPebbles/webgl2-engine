@@ -2,6 +2,7 @@ import { Mat3, Mat4, Quat, Vec3, Vec4 } from "@vicimpa/glm";
 import Engine from "../../engine";
 import { Light } from "./light";
 import { Node } from "../../node";
+import { UBOMemberArray, UBOMemberStruct } from "../../graphics/assets/uniform_buffer";
 
 export class SpotLight extends Light {
     range:number;
@@ -38,10 +39,16 @@ export class SpotLight extends Light {
 
         const world_rotation_matrix = new Mat4().fromQuat(world_rotation);
         
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, new Vec3(world_matrix[12], world_matrix[13], world_matrix[14]));
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, world_rotation_matrix);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].cookie_radius`, this.cookie_radius);
+        var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
+        
+        if (u_global_ubo === undefined)
+            throw Error("u_global ubo is undefined");
+
+        var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
+        light_struct.members["position"].set_uniform(new Vec3(world_matrix[12], world_matrix[13], world_matrix[14]));
+        light_struct.members["rotation"].set_uniform(world_rotation_matrix);
+        light_struct.members["range"].set_uniform(this.range);
+        light_struct.members["cookie_radius"].set_uniform(this.cookie_radius);
         super.set_uniforms(array_name, index);
     }
 

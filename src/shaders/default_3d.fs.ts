@@ -2,9 +2,7 @@ export default `#version 300 es
 precision lowp float;
 precision lowp sampler2DArrayShadow;
 
-uniform mediump int directional_lights_count;
-uniform mediump int point_lights_count;
-uniform mediump int spot_lights_count;
+
 
 #define N_DIRECTIONAL_LIGHTS 10
 #define N_POINT_LIGHTS 10
@@ -35,13 +33,6 @@ struct Material {
     bool has_ao_texture;
     float ao;
 };
-
-// PBR
-uniform sampler2D material_texture_albedo;
-uniform sampler2D material_texture_normal;
-uniform sampler2D material_texture_metalic;
-uniform sampler2D material_texture_roughness;
-uniform sampler2D material_texture_ao;
 
 struct PointLight {
     vec3 position;
@@ -77,25 +68,41 @@ struct DirectionalLight {
     float specular;
 };
 
-uniform PointLight point_lights[N_POINT_LIGHTS];
+layout(std140) uniform u_global {
+    mediump int directional_lights_count;
+    mediump int point_lights_count;
+    mediump int spot_lights_count;
 
-uniform SpotLight spot_lights[N_SPOT_LIGHTS];
+    PointLight point_lights[N_POINT_LIGHTS];
 
-uniform DirectionalLight directional_lights[N_DIRECTIONAL_LIGHTS];
+    SpotLight spot_lights[N_SPOT_LIGHTS];
 
-uniform Material material;
+    DirectionalLight directional_lights[N_DIRECTIONAL_LIGHTS];
+    
+    Environment environment;
+    
+    vec2 shadow_map_size;
 
-uniform Environment environment;
+    mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
+    mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
+    vec3 camera_position;
+};
 
-uniform vec3 camera_position;
+layout(std140) uniform u_object {
+    Material material;
+};
+uniform float time;
+
+// PBR
+uniform sampler2D material_texture_albedo;
+uniform sampler2D material_texture_normal;
+uniform sampler2D material_texture_metalic;
+uniform sampler2D material_texture_roughness;
+uniform sampler2D material_texture_ao;
 
 uniform sampler2DArrayShadow directional_light_shadow_maps;
+    
 uniform sampler2DArrayShadow point_light_shadow_maps;
-
-uniform vec2 shadow_map_size;
-
-uniform mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
-uniform mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
 
 float L(PointLight light);
 float L(DirectionalLight light);

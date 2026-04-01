@@ -91,6 +91,11 @@ export class ShaderProgram {
             console.error(this.gl.getProgramInfoLog(this.webgl_shader_program));
         }
 
+        // BUILD UBOS
+        for (const ubo of Object.values(this.ubos)) {
+            ubo.build();
+        }
+
         this.use();
         // find uniform locs
 
@@ -112,6 +117,9 @@ export class ShaderProgram {
     }
 
     cleanup() {
+        for (const ubo of Object.values(this.ubos)) {
+            ubo.cleanup();
+        }
         for (const shader of this.shaders) {
             this.gl.deleteShader(shader)
         }

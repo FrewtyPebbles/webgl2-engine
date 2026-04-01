@@ -611,7 +611,6 @@ export class GraphicsManager {
             environment: {
                 ambient_light: WebGLUniformType.F3V,
             },
-            time: WebGLUniformType.F,
             shadow_map_size: WebGLUniformType.F2V,
             u_directional_light_space_matrix: new ArrayMember(WebGLUniformType.F4M, 10),
             u_point_light_space_matrix: new ArrayMember(WebGLUniformType.F4M, 60),
@@ -631,6 +630,8 @@ export class GraphicsManager {
                 ao: WebGLUniformType.F,
             }
         });
+
+        shader_prog_3d.add_uniform("time", WebGLUniformType.F)
 
         // MVP
         shader_prog_3d.add_uniform("u_model", WebGLUniformType.F4M);

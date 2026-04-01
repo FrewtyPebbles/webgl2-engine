@@ -41,7 +41,7 @@ function align(offset:number, alignment:number) {
 }
 
 
-class UBOMember {
+export class UBOMember {
     ubo:UniformBufferObject
     type:ArrayMember | Members | WebGLUniformType
     size:number
@@ -189,7 +189,7 @@ class UBOMember {
     }
 }
 
-class UBOMemberStruct extends UBOMember {
+export class UBOMemberStruct extends UBOMember {
     members:{[key:string]:UBOMember} = {}
 
     constructor(ubo:UniformBufferObject, members:Members, index:number, offset:number) {
@@ -229,7 +229,7 @@ class UBOMemberStruct extends UBOMember {
     }
 }
 
-class UBOMemberArray extends UBOMember {
+export class UBOMemberArray extends UBOMember {
     length:number
     elements: UBOMember[]
     constructor(ubo:UniformBufferObject, raw_elements: ArrayMember | Members | WebGLUniformType, length:number, index:number, offset:number) {
@@ -329,20 +329,22 @@ export class UniformBufferObject {
     shader_program:ShaderProgram
     graphics_manager:GraphicsManager
     name:string
+    raw_members:Members
     members:{[key:string]:UBOMember|UBOMemberArray|UBOMemberStruct} = {}
-    size:number
-    gl_buffer:WebGLBuffer
-    gl_ubo_block_index: number
-    gl_ubo_block_size: number
+    size!:number
+    gl_buffer!:WebGLBuffer
+    gl_ubo_block_index!: number
+    gl_ubo_block_size!: number
     memory_usage_mode:MEMORY_USAGE_MODE
     private gl_memory_usage_mode:number
-    gl_ubo_index:number
+    gl_ubo_index!:number
     static ubo_counter:number = 0
-    memory_mirror:ArrayBuffer
+    memory_mirror!:ArrayBuffer
     constructor(shader_program:ShaderProgram, name:string, members:Members, memory_usage_mode:MEMORY_USAGE_MODE = MEMORY_USAGE_MODE.DYNAMIC_DRAW) {
         this.shader_program = shader_program;
         this.graphics_manager = this.shader_program.gm;
         this.name = name;
+        this.raw_members = members
 
         const gl = this.graphics_manager.gl;
         this.memory_usage_mode = memory_usage_mode;
@@ -375,12 +377,13 @@ export class UniformBufferObject {
                 this.gl_memory_usage_mode = gl.STREAM_COPY;
                 break;
         }
+    }
 
-        // Create the gl buffer
+    build() {
+        const gl = this.graphics_manager.gl;
+        this.gl_ubo_block_index = gl.getUniformBlockIndex(this.shader_program.webgl_shader_program!, this.name);
 
-        this.gl_ubo_block_index = gl.getUniformBlockIndex(this.shader_program, this.name);
-
-        this.gl_ubo_block_size = gl.getActiveUniformBlockParameter(this.shader_program, this.gl_ubo_block_index, gl.UNIFORM_BLOCK_DATA_SIZE);
+        this.gl_ubo_block_size = gl.getActiveUniformBlockParameter(this.shader_program.webgl_shader_program!, this.gl_ubo_block_index, gl.UNIFORM_BLOCK_DATA_SIZE);
 
         this.gl_buffer = gl.createBuffer();
 
@@ -392,17 +395,30 @@ export class UniformBufferObject {
         this.gl_ubo_index = UniformBufferObject.ubo_counter;
         gl.bindBufferBase(gl.UNIFORM_BUFFER, this.gl_ubo_index, this.gl_buffer);
 
-        const member_indices = gl.getUniformIndices(this.shader_program.webgl_shader_program!, Object.keys(members));
+        const names = Object.keys(this.raw_members);
+        const member_indices = gl.getUniformIndices(this.shader_program.webgl_shader_program!, names);
 
         if (member_indices === null) {
-            throw Error(`Failed to get member indices ${members} of UBO "${this.name}".`);
+            throw Error(`Failed to get any uniform indices for UBO "${this.name}".`);
+        }
+
+        // Check if any specific index is invalid
+        for (let i = 0; i < member_indices.length; i++) {
+            if (member_indices[i] === 4294967295) { // gl.INVALID_INDEX
+                console.warn(`UBO Member "${names[i]}" is inactive and will be skipped.`);
+            }
         }
 
         const member_offsets = gl.getActiveUniforms(this.shader_program.webgl_shader_program!, member_indices, gl.UNIFORM_OFFSET);
 
+        if (member_offsets === null) {
+            // This confirms at least one index was gl.INVALID_INDEX
+            throw Error(`gl.getActiveUniforms returned null. One or more members in "${this.name}" are likely optimized out by the shader.`);
+        }
+
         this.size = 0;
 
-        Object.entries(members).forEach(([name, type], index) => {
+        Object.entries(this.raw_members).forEach(([name, type], index) => {
             if (type instanceof ArrayMember) {
                 this.members[name] = new UBOMemberArray(this, type.type, type.length, member_indices[index], member_offsets[index]);
             } else if (Object.values(WebGLUniformType).includes(type as WebGLUniformType)) {

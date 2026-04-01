@@ -4,6 +4,7 @@ import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
 import { ShaderProgram } from "../../graphics/shader_program";
 import { Node } from "../../node";
 import { Light } from "./light";
+import { UBOMemberArray, UBOMemberStruct } from "../../graphics/assets/uniform_buffer";
 
 export class DirectionalLight extends Light {
 
@@ -84,8 +85,13 @@ export class DirectionalLight extends Light {
             const world_rotation = new Quat().fromMat3(world_mat3).normalize();
             const world_rotation_matrix = new Mat4().fromQuat(world_rotation);
 
-            this.engine.graphics_manager.set_uniform(`${array_name}[${index}].rotation`, world_rotation_matrix);
-            this.engine.graphics_manager.set_uniform(`u_directional_light_space_matrix[${index}]`, this.directional_light_space_matrix);
+            var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
+        
+            if (u_global_ubo === undefined)
+                throw Error("u_global ubo is undefined");
+            
+            ((u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct).members["rotation"].set_uniform(world_rotation_matrix);
+            (u_global_ubo.members["u_directional_light_space_matrix"] as UBOMemberArray).elements[index].set_uniform(this.directional_light_space_matrix);
             super.set_uniforms(array_name, index);
         } else {
             throw Error(`The main scene named "${this.engine.main_scene.name}" does not have a main_camera_3d which is required to render a shadow map.`)

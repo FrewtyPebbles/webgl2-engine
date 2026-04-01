@@ -4,6 +4,7 @@ import { Node3D } from "../node";
 import { Skybox } from "./skybox";
 import { Model } from "../graphics/assets/model";
 import { CubeMapTexture } from "../graphics/assets/texture";
+import { UBOMemberStruct } from "../graphics/assets/uniform_buffer";
 
 export class Object3D extends Node3D {
     model:Model;
@@ -20,15 +21,22 @@ export class Object3D extends Node3D {
 
         const gm = this.engine.graphics_manager;
 
+        var u_global_ubo = gm.shader_program?.ubos["u_global"];
+        
+        if (u_global_ubo === undefined)
+            throw Error("u_global ubo is undefined");
+        
+        u_global_ubo.bind();
+
         const skybox = this.get_parent_of_type(Skybox);
         if (skybox)
-            gm.set_uniform("environment.ambient_light", skybox.ambient_light);
+            (u_global_ubo.members["environment"] as UBOMemberStruct).members["ambient_light"].set_uniform(skybox.ambient_light);
 
         const main_camera_3d = this.engine.main_scene.main_camera_3d
 
         // CAMERA POS
         if (main_camera_3d) {
-            gm.set_uniform("camera_position", main_camera_3d.position);
+            u_global_ubo.members["camera_position"].set_uniform(main_camera_3d.position);
         } else {
             throw Error(`Main scene "${this.engine.main_scene.name}" does not have a main_camera_3d set which is required to render Object3Ds such as the node named "${this.name}".`);
         }
@@ -65,14 +73,14 @@ export class Object3D extends Node3D {
                 directional_lights[i].set_uniforms("directional_lights", i);
         }
 
-        gm.set_uniform("point_lights_count", point_lights_count);
-        gm.set_uniform("spot_lights_count", spot_lights_count);
-        gm.set_uniform("directional_lights_count", directional_lights_count);
+        u_global_ubo.members["directional_lights_count"].set_uniform(directional_lights_count);
+        u_global_ubo.members["point_lights_count"].set_uniform(point_lights_count);
+        u_global_ubo.members["spot_lights_count"].set_uniform(spot_lights_count);
 
         //PASS SHADOW MAPS
         gm.set_uniform("directional_light_shadow_maps", gm.directional_light_shadow_map_texture)
         gm.set_uniform("point_light_shadow_maps", gm.point_light_shadow_map_texture)
-        gm.set_uniform("shadow_map_size", new Vec2(gm.shadow_resolution))
+        u_global_ubo.members["shadow_map_size"].set_uniform(new Vec2(gm.shadow_resolution));
 
         // pass the MVP matrix
         gm.set_uniform("u_model", this.get_world_matrix());
@@ -80,6 +88,8 @@ export class Object3D extends Node3D {
         gm.set_uniform("u_view", view_matrix);
 
         gm.set_uniform("u_projection", projection_matrix_3d);
+
+        u_global_ubo.unbind();
 
         this.model.draw_end();
     }

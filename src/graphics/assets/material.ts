@@ -2,6 +2,7 @@ import { Vec3 } from "@vicimpa/glm";
 import { GraphicsManager } from "../graphics_manager";
 import { ShaderProgram } from "../shader_program";
 import { Texture } from "./texture";
+import { UBOMemberStruct } from "./uniform_buffer";
 
 export interface MaterialOptionsObject {
     enable_depth_test?:boolean;
@@ -76,36 +77,45 @@ export class Material {
     }
 
     set_uniforms(): void {
+        var u_object_ubo = this.shader_program?.ubos["u_object"];
+        
+        if (u_object_ubo === undefined)
+            throw Error("u_object ubo undefined");
+
+        u_object_ubo.bind();
+        var material_struct:UBOMemberStruct = u_object_ubo.members["material"] as UBOMemberStruct;
         if (this.normal === null) {
-            this.gm.set_uniform(`material.has_normal_texture`, false);
+            material_struct.members["has_normal_texture"].set_uniform(false);
         } else {
-            this.gm.set_uniform(`material.has_normal_texture`, true);
+            material_struct.members["has_normal_texture"].set_uniform(true);
             this.gm.set_uniform(`material_texture_normal`, this.normal);
         }
 
         if (this.albedo instanceof Texture) {
-            this.gm.set_uniform(`material.has_albedo_texture`, true);
+            material_struct.members["has_albedo_texture"].set_uniform(true);
             this.gm.set_uniform(`material_texture_albedo`, this.albedo);
         } else {
-            this.gm.set_uniform(`material.has_albedo_texture`, false);
-            this.gm.set_uniform(`material.albedo`, this.albedo);
+            material_struct.members["has_albedo_texture"].set_uniform(false);
+            material_struct.members["albedo"].set_uniform(this.albedo);
         }
 
         if (this.metalic instanceof Texture) {
-            this.gm.set_uniform(`material.has_metalic_texture`, true);
+            material_struct.members["has_metalic_texture"].set_uniform(true);
             this.gm.set_uniform(`material_texture_metalic`, this.metalic);
         } else {
-            this.gm.set_uniform(`material.has_metalic_texture`, false);
-            this.gm.set_uniform(`material.metalic`, this.metalic);
+            material_struct.members["has_metalic_texture"].set_uniform(false);
+            material_struct.members["metalic"].set_uniform(this.metalic);
         }
 
         if (this.roughness instanceof Texture) {
-            this.gm.set_uniform(`material.has_roughness_texture`, true);
+            material_struct.members["has_roughness_texture"].set_uniform(true);
             this.gm.set_uniform(`material_texture_roughness`, this.roughness);
         } else {
-            this.gm.set_uniform(`material.has_roughness_texture`, false);
-            this.gm.set_uniform(`material.roughness`, this.roughness);
+            material_struct.members["has_roughness_texture"].set_uniform(false);
+            material_struct.members["roughness"].set_uniform(this.roughness);
         }
+
+        u_object_ubo.unbind();
     }
 
     draw_start(set_uniforms:boolean = true) {

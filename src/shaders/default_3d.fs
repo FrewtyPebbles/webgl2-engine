@@ -86,12 +86,12 @@ layout(std140) uniform u_global {
     mat4 u_directional_light_space_matrix[N_DIRECTIONAL_LIGHTS];
     mat4 u_point_light_space_matrix[N_POINT_LIGHTS * 6];
     vec3 camera_position;
-    float time;
 };
 
 layout(std140) uniform u_object {
     Material material;
 };
+uniform float time;
 
 // PBR
 uniform sampler2D material_texture_albedo;

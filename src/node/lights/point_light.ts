@@ -6,6 +6,7 @@ import { ShaderProgram } from "../../graphics/shader_program";
 import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
 import { CubeMapTexture, TextureType } from "../../graphics/assets/texture";
 import { GraphicsManager } from "../../graphics/graphics_manager";
+import { UBOMemberArray, UBOMemberStruct } from "../../graphics/assets/uniform_buffer";
 
 // TODO: FIX SHADOWS NEGATED BY OBJECTS UNDERNEATH OBJECTS ONTOP OF THE OBJECTS
 
@@ -143,12 +144,18 @@ export class PointLight extends Light {
     }
 
     set_uniforms(array_name: string, index: number): void {
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].position`, this.get_world_position());
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].range`, this.range);
+        var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
+        
+        if (u_global_ubo === undefined)
+            throw Error("u_global ubo is undefined");
+
+        var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
+        light_struct.members["position"].set_uniform(this.get_world_position());
+        light_struct.members["range"].set_uniform(this.range);
 
         // Set shadow map uniforms        
         this.engine.graphics_manager.set_uniform(`point_light_shadow_maps`, this.framebuffer.attachment_info_map["depth"].texture);
-        this.engine.graphics_manager.set_uniform(`u_point_light_space_matrix[${index * 6}]`, this.point_light_space_matrices);
+        (u_global_ubo.members["u_point_light_space_matrix"] as UBOMemberArray).elements[index * 6].set_uniform(this.point_light_space_matrices);
 
         super.set_uniforms(array_name, index);
     }

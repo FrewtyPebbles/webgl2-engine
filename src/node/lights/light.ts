@@ -4,6 +4,7 @@ import { Node, Node3D } from "../../node";
 import { ShaderProgram } from "../../graphics/shader_program";
 import { AttachmentType, Framebuffer } from "../../graphics/framebuffer";
 import { Texture, TextureType } from "../../graphics/assets/texture";
+import { UBOMemberArray, UBOMemberStruct } from "../../graphics/assets/uniform_buffer";
 
 
 
@@ -40,10 +41,17 @@ export class Light extends Node3D {
     }
 
     set_uniforms(array_name:string, index:number): void {
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].color`, this.color);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].ambient`, this.ambient);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].diffuse`, this.diffuse);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].specular`, this.specular);
-        this.engine.graphics_manager.set_uniform(`${array_name}[${index}].energy`, this.energy);
+        var u_global_ubo = this.engine.graphics_manager.shader_program?.ubos["u_global"];
+        
+        if (u_global_ubo === undefined)
+            throw Error("u_global ubo is undefined");
+
+        var light_struct = (u_global_ubo.members[array_name] as UBOMemberArray).elements[index] as UBOMemberStruct;
+        
+        light_struct.members["color"].set_uniform(this.color);
+        light_struct.members["ambient"].set_uniform(this.ambient);
+        light_struct.members["diffuse"].set_uniform(this.diffuse);
+        light_struct.members["specular"].set_uniform(this.specular);
+        light_struct.members["energy"].set_uniform(this.energy);
     }
 }
