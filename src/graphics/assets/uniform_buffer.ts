@@ -2,28 +2,7 @@ import { GraphicsManager } from "../graphics_manager";
 import { ShaderProgram } from "../shader_program";
 import Engine from "../../engine";
 import { Mat2, Mat3, Mat4, Vec2, Vec3, Vec4 } from "@vicimpa/glm";
-
-export enum WebGLUniformType {
-    TEXTURE_2D,
-    TEXTURE_2D_ARRAY,
-    TEXTURE_CUBE_MAP,
-    SHADOW_2D,
-    SHADOW_2D_ARRAY,
-    SHADOW_CUBE_MAP,
-    STRUCT,
-    F,
-    I,
-    B,
-    F2V,
-    I2V,
-    F3V,
-    I3V,
-    F4V,
-    I4V,
-    F2M,
-    F3M,
-    F4M,
-}
+import { UniformValueType, WebGLUniformType } from "./uniform";
 
 export enum MEMORY_USAGE_MODE {
     STATIC_DRAW,
@@ -40,8 +19,6 @@ export enum MEMORY_USAGE_MODE {
 function align(offset:number, alignment:number) {
     return (offset + alignment - 1) & ~(alignment - 1);
 }
-
-type UniformValueType = Vec2|Vec3|Vec4|Mat2|Mat3|Mat4|number|boolean;
 
 export class UBOMember {
     ubo:UniformBufferObject
@@ -468,7 +445,7 @@ export class UniformBufferObject {
         gl.bindBuffer(gl.UNIFORM_BUFFER, null);
     }
 
-    set_all(bind:boolean = false) {
+    apply(bind:boolean = false) {
         const gl = this.graphics_manager.gl;
         if (bind)
             gl.bindBuffer(gl.UNIFORM_BUFFER, this.gl_buffer);

@@ -23,7 +23,8 @@ import { PointLight } from '../node/lights/point_light';
 import { DirectionalLight } from '../node/lights/directional_light';
 import { SpotLight } from '../node/lights/spot_light';
 import { cleanup_vaos } from './assets/vaos';
-import { ArrayMember, WebGLUniformType } from './assets/uniform_buffer';
+import { ArrayMember } from './assets/uniform_buffer';
+import { UniformValueType, WebGLUniformType } from './assets/uniform';
 
 export type WebGLType = number;
 
@@ -41,7 +42,7 @@ export class GraphicsManager {
     canvas:HTMLCanvasElement;
     gl:WebGL2RenderingContext;
     shader_programs:{[key:string]:ShaderProgram} = {};
-    shader_program:ShaderProgram|null = null;
+    private shader_program_stack:{shader:ShaderProgram, bound:boolean}[] = []
     framebuffers:{[key:string]:Framebuffer} = {};
     framebuffer:Framebuffer|null = null;
     vertex_attributes:{[key:string]:WebGLVertexAttribute} = {};
@@ -67,6 +68,13 @@ export class GraphicsManager {
     shadow_resolution:number = 1024 * 6;
 
     stopping:boolean = false;
+
+    get shader_program():ShaderProgram|null {
+        if (this.shader_program_stack)
+            return this.shader_program_stack[this.shader_program_stack.length - 1].shader;
+        else
+            return null;
+    }
     
     constructor(engine:Engine, canvas:HTMLCanvasElement) {
         this.canvas = canvas;
@@ -193,18 +201,38 @@ export class GraphicsManager {
         return prog;
     }
 
-    use_shader(name:string) {        
+    set_uniform(label:string, value:UniformValueType | Texture | CubeMapTexture | (UniformValueType | Texture | CubeMapTexture)[], transpose:boolean = false, warn:boolean = false) {
         if (this.shader_program)
-            this.clear_shader();
-        this.shader_program = this.shader_programs[name];
-        this.gl.useProgram(this.shader_program.webgl_shader_program);
-        // console.log(`USING SHADER ${this.shader_program.name}`);
-        
+            this.shader_program.set_uniform(label, value, transpose, warn);
+        else
+            console.warn(`Attempted to set uniform \"${label}\" without a shader bound.`);
+    }
+
+    write_uniform(label:string, value:UniformValueType | Texture | CubeMapTexture | (UniformValueType | Texture | CubeMapTexture)[], transpose:boolean = false, warn:boolean = false) {
+        if (this.shader_program)
+            this.shader_program.write_uniform(label, value, transpose, warn);
+        else
+            console.warn(`Attempted to write uniform \"${label}\" without a shader bound.`);
+    }
+
+    use_shader(name:string, bind:boolean = true) {
+        if (this.shader_program_stack.length !== 0 && this.shader_program_stack[this.shader_program_stack.length - 1].bound)
+            this.gl.useProgram(null);
+        this.shader_program_stack.push({shader:this.shader_programs[name], bound:bind});
+        if (bind)
+            this.gl.useProgram(this.shader_program!.webgl_shader_program);
     }
 
     clear_shader() {
-        this.gl.useProgram(null);
-        this.shader_program = null;
+        let popped_shader = this.shader_program_stack.pop();
+        if (popped_shader === undefined)
+            return;
+        if (popped_shader.bound)
+            this.gl.useProgram(null);
+        if (this.shader_program_stack.length === 0)
+            return;
+        if (this.shader_program_stack[this.shader_program_stack.length - 1].bound)
+            this.gl.useProgram(this.shader_program!.webgl_shader_program);
     }
 
     create_framebuffer(name:string, attachment_info:AttachmentInfo[], draw_flags:DrawBitFlags) {
@@ -292,126 +320,6 @@ export class GraphicsManager {
         gl.viewport(0, 0, this.canvas.width, this.canvas.height);
     }
 
-    set_uniform(label:string, value:any, transpose:boolean = false, warn:boolean = false) {
-        
-        
-        if (this.shader_program === null) {
-            if (warn)
-                console.warn(`Attempted to set ${label} uniform value to ${value} before a shader program was selected.`)
-            return;
-        }
-        
-        const label_index = get_uniform_label_index(label);
-        
-        
-        const normalized_label = normalize_uniform_label(label).replace("[]", "");
-        
-        let uniform = this.shader_program.uniforms[normalized_label];
-        if (uniform === undefined) {
-            if (warn)
-                console.warn(`The uniform "${label}" has not been registered for the shader program "${this.shader_program.name}".`)
-            return;
-        }
-        
-        if (!(label in this.shader_program.uniform_locs)) {
-            const loc = this.gl.getUniformLocation(this.shader_program.webgl_shader_program!, label);
-            if (!loc) {
-                if (warn)
-                    console.warn(`Uniform "${label}" not in use in shader program "${this.shader_program.name}".`)
-            }
-            this.shader_program.uniform_locs[label] = loc;
-        }
-
-        // if (uniform.texture_unit !== undefined)
-        //     console.log("UNIFORM ", normalized_label, " ", uniform.texture_unit! + label_index, "SHADER : ", this.shader_program.name);
-        var is_sending_array = false;
-        if (value instanceof Array) {
-            if (uniform.is_array) {
-                is_sending_array = true
-            } else {
-                throw Error(`Uniform "${label}" in shader program "${this.shader_program.name}" does not accept array values even though one was supplied.`)
-            }
-        }
-
-        // console.log(label);
-        
-
-        if (is_sending_array) {
-            value = GraphicsManager.flatten_uniform_array_value(value);
-        }
-
-        switch (uniform.type) {
-            case WebGLUniformType.TEXTURE_2D:
-            case WebGLUniformType.SHADOW_2D:
-                this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit! + label_index);
-                this.gl.bindTexture(this.gl.TEXTURE_2D, (value as Texture).webgl_texture);
-                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit! + label_index);
-                break;
-            case WebGLUniformType.TEXTURE_2D_ARRAY:
-            case WebGLUniformType.SHADOW_2D_ARRAY:                
-                this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit! + label_index);
-                this.gl.bindTexture(this.gl.TEXTURE_2D_ARRAY, (value as Texture).webgl_texture);
-                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit! + label_index);
-                break;
-
-            case WebGLUniformType.SHADOW_CUBE_MAP:
-            case WebGLUniformType.TEXTURE_CUBE_MAP:
-                this.gl.activeTexture(this.gl.TEXTURE0 + uniform.texture_unit! + label_index);
-                this.gl.bindTexture(this.gl.TEXTURE_CUBE_MAP, (value as CubeMapTexture).webgl_texture);
-                this.gl.uniform1i(this.shader_program.uniform_locs[label], uniform.texture_unit! + label_index);
-                break;
-
-            case WebGLUniformType.F:
-                if (is_sending_array)
-                    this.gl.uniform1fv(this.shader_program.uniform_locs[label], value);
-                else
-                    this.gl.uniform1f(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.I:
-                if (is_sending_array)
-                    this.gl.uniform1iv(this.shader_program.uniform_locs[label], value);
-                else
-                    this.gl.uniform1i(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.B:
-                if (is_sending_array)
-                    this.gl.uniform1iv(this.shader_program.uniform_locs[label], value);
-                else
-                    this.gl.uniform1i(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.F2V:
-                this.gl.uniform2fv(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.I2V:
-                this.gl.uniform2iv(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.F3V:
-                this.gl.uniform3fv(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.I3V:
-                this.gl.uniform3iv(this.shader_program.uniform_locs[label], value);
-                break;
-
-            case WebGLUniformType.F2M:
-                this.gl.uniformMatrix2fv(this.shader_program.uniform_locs[label], transpose, value);
-                break;
-
-            case WebGLUniformType.F3M:
-                this.gl.uniformMatrix3fv(this.shader_program.uniform_locs[label], transpose, value);
-                break;
-            
-            case WebGLUniformType.F4M:
-                this.gl.uniformMatrix4fv(this.shader_program.uniform_locs[label], transpose, value);
-                break;
-        }
-    }
-
     static flatten_uniform_array_value(array_value:(Vec2|Vec3|Vec4|Mat2|Mat3|Mat4|number)[]):Float32Array {
         var first_value = array_value[0];
         if (typeof first_value === "number")
@@ -490,20 +398,11 @@ export class GraphicsManager {
         // calculate delta in seconds
         let delta_time = (current_time - this.last_frame_time) / 1000;  // already ms → seconds
 
-        delta_time = delta_time;
-
         this.last_frame_time = current_time;
         
         
         this.resize_canvas();
-        
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        this.gl.clearColor(0, 0, 0, 0);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
 
-        this.engine.on_global_update_callback(this.engine, current_time, delta_time);
-        this.engine.main_scene.update(current_time, delta_time);
-        this.engine.input_manager.update();
         
         // Render node heirarchy.
         const ortho_projection = new Mat4().orthoZO(0, this.canvas.width, 0, this.canvas.height, -1, 1);
@@ -511,7 +410,15 @@ export class GraphicsManager {
             
             const view_matrix = this.engine.main_scene.main_camera_3d.get_view_matrix();
             const projection_matrix = this.engine.main_scene.main_camera_3d.get_projection_matrix(this.canvas);
+            
+            this.engine.on_global_update_callback(this.engine, current_time, delta_time);
+            this.engine.main_scene.update(view_matrix, projection_matrix, ortho_projection, current_time, delta_time);
+            this.engine.input_manager.update();
 
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            this.gl.clearColor(0, 0, 0, 0);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+            
             // RENDER SHADOWS
             for (const light of this.point_lights) {
                 light.draw_shadow_map(
@@ -531,17 +438,12 @@ export class GraphicsManager {
                 );
             }
             
-            for (const shader_program of Object.values(this.shader_programs)) {
-                shader_program.set_all_uniforms();
-            }
-
             this.engine.main_scene.render(
                 view_matrix,
                 projection_matrix,
                 ortho_projection,
                 current_time, delta_time
             );
-
             
         } else {
             console.warn(`The main scene "${this.engine.main_scene.name}" does not have a main camera 3D`);

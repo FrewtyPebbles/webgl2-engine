@@ -26,7 +26,7 @@ export class Model {
         if (!this.gm.engine.main_scene.rendering_depth_map)
             this.material.draw_start();
     }
-
+    
     draw_end() {
         this.mesh.draw();
         if (!this.gm.engine.main_scene.rendering_depth_map)

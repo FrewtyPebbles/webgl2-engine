@@ -3,11 +3,13 @@ import Engine from "../../engine";
 import { Light } from "./light";
 import { Node } from "../../node";
 import { UBOMemberArray, UBOMemberStruct } from "../../graphics/assets/uniform_buffer";
+import { ShaderProgram } from "../../graphics/shader_program";
 
 export class SpotLight extends Light {
     range:number;
     cookie_radius:number;
-    
+    shader_program:ShaderProgram;
+
     constructor(
         engine:Engine,
         name:string,
@@ -18,6 +20,7 @@ export class SpotLight extends Light {
         energy:number,
         range:number,
         cookie_radius:number,
+        shader_program:ShaderProgram|null = null,
     ) {
         super(engine, name, color, ambient, diffuse, specular, energy);
         this.ambient = ambient;
@@ -25,6 +28,16 @@ export class SpotLight extends Light {
         this.specular = specular;
         this.range = range;
         this.cookie_radius = cookie_radius;
+        this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.create_default_point_shadow_shader_program();
+        throw Error("SPOT LIGHTS NOT IMPLEMENTED YET, make sure to replace the function call in this line: this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.create_default_point_shadow_shader_program();");
+    }
+
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.shader_program.use(false);
+    }
+
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
     }
 
     set_uniforms(array_name: string, index: number): void {

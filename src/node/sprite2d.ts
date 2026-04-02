@@ -22,6 +22,14 @@ export class Sprite2D extends Node2D {
         this.sprite_texture = sprite_texture;
     }
 
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.shader_program.use(false);
+    }
+
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
+    }
+
     render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
         if (this.engine.main_scene.rendering_depth_map)
             return;
@@ -33,7 +41,7 @@ export class Sprite2D extends Node2D {
         gm.gl.enable(gm.gl.BLEND);
         gm.gl.blendFunc(gm.gl.SRC_ALPHA, gm.gl.ONE_MINUS_SRC_ALPHA);
 
-        this.shader_program.use();
+        this.shader_program.use(true);
 
         this.on_render(this, this.engine, time, delta_time);
 
@@ -45,6 +53,8 @@ export class Sprite2D extends Node2D {
 
 
         gm.set_uniform("u_projection", projection_matrix_2d);
+
+        gm.shader_program!.apply_all_uniforms();
 
         // render vao
         gm.gl.bindVertexArray(this.vao.vao);

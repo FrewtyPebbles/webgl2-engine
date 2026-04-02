@@ -47,9 +47,9 @@ export class Scene {
         return null;
     }
 
-    update(time: number, delta_time: number) {
+    update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time: number, delta_time: number) {
         if (this.root_node) {
-            this.root_node.update(time, delta_time);
+            this.root_node.update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
         } else {
             console.warn(`A root node was not set for scene "${this.name}".`);
         }

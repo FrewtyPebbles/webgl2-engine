@@ -14,11 +14,15 @@ export class Object3D extends Node3D {
         this.model = model;
     }
     
-    render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {        
-        this.model.draw_start();
-        
-        this.on_render(this, this.engine, time, delta_time);
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.model.material.shader_program.use(false);
+    }
 
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
+    }
+
+    set_uniforms(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
         const gm = this.engine.graphics_manager;
 
         var u_global_ubo = gm.shader_program?.ubos["u_global"];
@@ -76,18 +80,31 @@ export class Object3D extends Node3D {
             u_global_ubo.members["spot_lights_count"].set_uniform(spot_lights_count);
 
             //PASS SHADOW MAPS
-            gm.set_uniform("directional_light_shadow_maps", gm.directional_light_shadow_map_texture)
-            gm.set_uniform("point_light_shadow_maps", gm.point_light_shadow_map_texture)
             u_global_ubo.members["shadow_map_size"].set_uniform(new Vec2(gm.shadow_resolution));
         }
-
+        if (!this.engine.main_scene.rendering_depth_map) {
+            gm.set_uniform("directional_light_shadow_maps", gm.directional_light_shadow_map_texture)
+            gm.set_uniform("point_light_shadow_maps", gm.point_light_shadow_map_texture)
+        }
+        
         // pass the MVP matrix
         gm.set_uniform("u_model", this.get_world_matrix());
 
-        gm.set_uniform("u_view", view_matrix);
+        if (!this.engine.main_scene.rendering_depth_map) {
+            gm.set_uniform("u_view", view_matrix);
+            gm.set_uniform("u_projection", projection_matrix_3d);
+        }
 
-        gm.set_uniform("u_projection", projection_matrix_3d);
+        gm.shader_program!.apply_all_uniforms();
+    }
+
+    render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {        
+        this.model.draw_start();
         
+        this.on_render(this, this.engine, time, delta_time);
+
+        this.set_uniforms(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+
         this.model.draw_end();
     }
 

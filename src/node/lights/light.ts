@@ -32,10 +32,8 @@ export class Light extends Node3D {
         this.energy = energy;
     }
 
-
-
     set_shader_uniforms(shader_program:ShaderProgram, array_name:string, index:number): void {
-        shader_program.use();
+        shader_program.use(false);
         this.set_uniforms(array_name, index);
         this.engine.graphics_manager.clear_shader();
     }

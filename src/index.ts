@@ -5,6 +5,7 @@ export * from "./graphics/assets/mesh";
 export * from "./graphics/assets/model";
 export * from "./graphics/assets/texture";
 export * from "./graphics/assets/uniform_buffer";
+export * from "./graphics/assets/uniform";
 export * from "./graphics/framebuffer";
 export * from "./graphics/shader_program";
 export * from "./graphics/graphics_manager";

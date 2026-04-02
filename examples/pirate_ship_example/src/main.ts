@@ -139,11 +139,13 @@ async function startup(engine:Engine) {
         if (child instanceof Object3D) {
             child.model.material.blend_function = {sfactor:gm.gl.SRC_ALPHA, dfactor:gm.gl.ONE_MINUS_SRC_ALPHA};
             child.model.material.set_shader_program(shader_prog_submerged);
+            await child.set_lua_file("/assets/src/anchor.lua");
         }
         for (const sub_child of child.children) {
             if (sub_child instanceof Object3D) {
                 sub_child.model.material.blend_function = {sfactor:gm.gl.SRC_ALPHA, dfactor:gm.gl.ONE_MINUS_SRC_ALPHA};
                 sub_child.model.material.set_shader_program(shader_prog_submerged);
+                await child.set_lua_file("/assets/src/anchor.lua");
             }
         }
     }
@@ -161,8 +163,6 @@ async function startup(engine:Engine) {
     sphere.model.material.set_shader_program(shader_prog_submerged);
 
     const name = (await name_promise) as Node3D;
-
-    await anchor.set_lua_file("/assets/src/anchor.lua");
 
     await pirate_ship.set_lua_file("/assets/src/pirate_ship.lua");
 

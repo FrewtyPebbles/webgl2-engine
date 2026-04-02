@@ -14,7 +14,7 @@ export interface MaterialOptionsObject {
 export class Material {
     gm:GraphicsManager;
     name:string;
-    shader_program:ShaderProgram|null;
+    shader_program:ShaderProgram;
     albedo:Vec3|Texture;
     metalic:number|Texture;
     roughness:number|Texture;
@@ -71,7 +71,7 @@ export class Material {
     }
 
     set_shader_uniforms(shader_program:ShaderProgram): void {
-        shader_program.use();
+        shader_program.use(false);
         this.set_uniforms();
         this.gm.clear_shader();
     }
@@ -82,7 +82,6 @@ export class Material {
         if (u_object_ubo === undefined)
             throw Error("u_object ubo undefined");
 
-        u_object_ubo.bind();
         var material_struct:UBOMemberStruct = u_object_ubo.members["material"] as UBOMemberStruct;
         if (this.normal === null) {
             material_struct.members["has_normal_texture"].set_uniform(false);
@@ -114,8 +113,6 @@ export class Material {
             material_struct.members["has_roughness_texture"].set_uniform(false);
             material_struct.members["roughness"].set_uniform(this.roughness);
         }
-
-        u_object_ubo.unbind();
     }
 
     draw_start(set_uniforms:boolean = true) {
@@ -134,7 +131,7 @@ export class Material {
             this.gm.gl.disable(this.gm.gl.BLEND);
         }
 
-        this.shader_program.use();
+        this.shader_program.use(true);
 
         if (set_uniforms)
             this.set_uniforms();

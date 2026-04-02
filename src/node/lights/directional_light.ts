@@ -33,12 +33,20 @@ export class DirectionalLight extends Light {
         this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.create_default_directional_shadow_shader_program();
     }
 
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.shader_program.use(false);
+    }
+
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
+    }
+
     draw_shadow_map(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time: number, delta_time: number): void {
         if (this.engine.main_scene.main_camera_3d) {  
                       
             this.engine.main_scene.rendering_depth_map = true
             
-            this.shader_program.use();
+            this.shader_program.use(true);
 
             this.framebuffer.use();
 
@@ -59,15 +67,15 @@ export class DirectionalLight extends Light {
                 corners
             );
 
-            this.engine.graphics_manager.set_uniform("u_light_space_matrix", this.directional_light_space_matrix);
-
+            this.engine.graphics_manager.write_uniform("u_light_space_matrix", this.directional_light_space_matrix);
+            
             this.engine.main_scene.render(
                 view_matrix,
                 projection_matrix_3d,
                 projection_matrix_2d,
                 time, delta_time
             );
-
+            
             this.engine.graphics_manager.unuse_framebuffer();
 
             this.engine.graphics_manager.clear_shader();

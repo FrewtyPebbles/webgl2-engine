@@ -23,6 +23,27 @@ export class Skybox extends Node {
         this.cubemap_texture = cubemap_texture;
         this.ambient_light = ambient_light;
     }
+
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.shader_program.use(false);
+    }
+
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
+    }
+
+    set_uniforms(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
+        const gm = this.engine.graphics_manager;
+
+        // bind the texture
+        gm.set_uniform("skybox_texture", this.cubemap_texture);
+        
+        // add the VP matrix
+        gm.set_uniform("u_view", view_matrix);
+
+        gm.set_uniform("u_projection", projection_matrix_3d);
+    }
+
     render_class(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
         if (this.engine.main_scene.rendering_depth_map)
             return;
@@ -31,19 +52,15 @@ export class Skybox extends Node {
 
         const gm = this.engine.graphics_manager;
 
-        this.shader_program.use();
+        this.shader_program.use(true);
         
         gm.gl.depthFunc(gm.gl.LEQUAL);
         
         this.on_render(this, this.engine, time, delta_time);
-        
-        // bind the texture
-        gm.set_uniform("skybox_texture", this.cubemap_texture);
-        
-        // add the VP matrix
-        gm.set_uniform("u_view", view_matrix);
 
-        gm.set_uniform("u_projection", projection_matrix_3d);
+        this.set_uniforms(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+
+        this.shader_program.apply_all_uniforms()
 
         // render vao
         gm.gl.bindVertexArray(this.vao.vao);

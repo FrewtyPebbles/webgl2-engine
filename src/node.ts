@@ -50,6 +50,8 @@ export class Node {
             this.engine.hook_manager.call_on_update_callback(this.lua_url, node, engine, time, delta_time);
     }
 
+    
+
     protected on_render(node:this, engine:Engine, time:number, delta_time:number) {
         if (this.engine.main_scene.rendering_depth_map)
             return;
@@ -176,15 +178,26 @@ export class Node {
         }
     }
 
-    update(time:number, delta_time:number) {
+
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {}
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {}
+
+    update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
+        this.before_update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
         this.on_update(this, this.engine, time, delta_time);
+        this.after_update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
         for (const child of this.children) {
-            child.update(time, delta_time);
+            child.update(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
         }
     }
+
+    protected before_render() {}
+    protected after_render() {}
     
     render(view_matrix:Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number) {
+        this.before_render();
         this.render_class(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
+        this.after_render();
         this.render_children(view_matrix, projection_matrix_3d, projection_matrix_2d, time, delta_time);
     }
     

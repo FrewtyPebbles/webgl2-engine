@@ -33,19 +33,51 @@ export class HookManager {
     }
     
     call_on_ready_callback(url:string, node:Node, engine:Engine) {
-        this.on_ready_callbacks[url](node, engine);
+        try {
+            this.on_ready_callbacks[url](node, engine);
+        } catch (error) {
+            if (error instanceof Error) {
+                let modified_error = Error(`Error in "on_ready" in lua file at "${url}" attached to "${node.name}":\n${error.message}`);
+                modified_error.stack = error.stack;
+                throw modified_error;
+            }
+        }
     }
     
     call_on_removed_callback(url:string, node:Node, engine:Engine, parent:Node) {
-        this.on_removed_callbacks[url](node, engine, parent);
+        try {
+            this.on_removed_callbacks[url](node, engine, parent);
+        } catch (error) {
+            if (error instanceof Error) {
+                let modified_error = Error(`Error in "on_removed" in lua file at "${url}" attached to "${node.name}":\n${error.message}`);
+                modified_error.stack = error.stack;
+                throw modified_error;
+            }
+        }
     }
     
     call_on_update_callback(url:string, node:Node, engine:Engine, time:number, delta_time:number) {
-        this.on_update_callbacks[url](node, engine, time, delta_time);
+        try {
+            this.on_update_callbacks[url](node, engine, time, delta_time);
+        } catch (error) {
+            if (error instanceof Error) {
+                let modified_error = Error(`Error in "on_update" in lua file at "${url}" attached to "${node.name}":\n${error.message}`);
+                modified_error.stack = error.stack;
+                throw modified_error;
+            }
+        }
     }
 
     call_on_render_callback(url:string, node:Node, engine:Engine, time:number, delta_time:number) {
-        this.on_render_callbacks[url](node, engine, time, delta_time);
+        try {
+            this.on_render_callbacks[url](node, engine, time, delta_time);
+        } catch (error) {
+            if (error instanceof Error) {
+                let modified_error = Error(`Error in "on_render" in lua file at "${url}" attached to "${node.name}" of type "${node.constructor.name}":\n${error.message}`);
+                modified_error.stack = error.stack;
+                throw modified_error;
+            }
+        }
     }
     
     private async do_lua_file_url(url: string) {

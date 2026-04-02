@@ -61,6 +61,14 @@ export class PointLight extends Light {
         this.shader_program = shader_program ? shader_program : this.engine.graphics_manager.create_default_point_shadow_shader_program();
     }
 
+    protected before_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.shader_program.use(false);
+    }
+
+    protected after_update(view_matrix: Mat4, projection_matrix_3d: Mat4, projection_matrix_2d: Mat4, time:number, delta_time:number): void {
+        this.engine.graphics_manager.clear_shader();
+    }
+
     get range():number {
         return this.stored_range;
     }
@@ -107,22 +115,22 @@ export class PointLight extends Light {
             }
 
 
-            this.shader_program.use();
+            this.shader_program.use(true);
                         
             this.framebuffer.use();
             
-            this.engine.graphics_manager.set_uniform(`origin`, this.get_world_position());
-            this.engine.graphics_manager.set_uniform(`range`, this.range);
+            this.engine.graphics_manager.write_uniform(`origin`, this.get_world_position());
+            this.engine.graphics_manager.write_uniform(`range`, this.range);
             
             for (var i = 0; i < 6; ++i) {
-                
+
                 this.framebuffer.set_attachment_texture_index("depth", this.shadow_index_offset + i);
                 
                 this.framebuffer.clear();
 
                 // Set uniforms
-                this.engine.graphics_manager.set_uniform(`u_light_space_matrix`, this.point_light_space_matrices[i]);
-
+                this.engine.graphics_manager.write_uniform(`u_light_space_matrix`, this.point_light_space_matrices[i]);
+                
                 // Render shadows to map
                 this.engine.main_scene.render(
                     view_matrix,
