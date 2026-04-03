@@ -25,6 +25,8 @@ The engine runtime currently uses a lua frontend via a [wasmoon](https://github.
 
  - Asyncronous asset loading
 
+ - Uniform Buffer Objects
+
 ## Todo Features:
 
  - Colliders and a collider system
